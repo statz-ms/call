@@ -324,6 +324,98 @@
     #speakerBtn{ display:flex; }
   }
   #speakerBtn.active{ background: var(--ok); color:#0c1a0c; border-color: var(--ok); }
+
+  /* ---------- Ícones + tooltips ---------- */
+  .icon{ width:20px; height:20px; display:block; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .ctrl-btn{ position:relative; }
+  .ctrl-btn[data-tooltip]::after,
+  .expand-btn[data-tooltip]::after,
+  .vol-btn[data-tooltip]::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 10px);
+    transform:translateX(-50%) translateY(4px);
+    background:#0b0b0b;
+    color:var(--text);
+    border:1px solid var(--line);
+    padding:7px 9px;
+    border-radius:8px;
+    font-size:11px;
+    font-weight:600;
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .15s ease, transform .15s ease;
+    z-index:100;
+    box-shadow:0 8px 20px rgba(0,0,0,.45);
+  }
+  .ctrl-btn[data-tooltip]:hover::after,
+  .ctrl-btn[data-tooltip]:focus-visible::after,
+  .expand-btn[data-tooltip]:hover::after,
+  .vol-btn[data-tooltip]:hover::after{
+    opacity:1;
+    visibility:visible;
+    transform:translateX(-50%) translateY(0);
+  }
+  .expand-btn[data-tooltip]::after,
+  .vol-btn[data-tooltip]::after{
+    bottom:auto;
+    top:calc(100% + 8px);
+  }
+
+  /* ---------- Dispositivos de áudio ---------- */
+  .audio-panel{
+    display:none;
+    position:absolute;
+    bottom:92px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(360px,90vw);
+    background:rgba(16,16,16,.96);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    z-index:26;
+    box-shadow:0 16px 40px -12px rgba(0,0,0,.8);
+  }
+  .audio-panel.active{display:block;}
+  .audio-row{margin-bottom:13px;}
+  .audio-row:last-child{margin-bottom:0;}
+  .audio-row label{margin-bottom:7px;}
+  .audio-select{
+    width:100%;
+    background:var(--surface-2);
+    color:var(--text);
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:9px 10px;
+    font:inherit;
+    font-size:12.5px;
+  }
+  .audio-hint{font-size:11px;line-height:1.45;color:var(--muted);margin-top:11px;}
+  .audio-refresh{
+    float:right;
+    background:none;border:0;color:var(--muted);font:inherit;font-size:11px;
+    padding:0;cursor:pointer;
+  }
+  .audio-refresh:hover{color:var(--text);}
+
+  .resume-room{
+    margin-top:18px;
+    padding:13px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--surface-2);
+  }
+  .resume-room strong{display:block;font-size:12px;margin-bottom:4px;}
+  .resume-room span{font-size:11.5px;color:var(--muted);}
+  .resume-actions{display:flex;gap:8px;margin-top:10px;}
+  .resume-actions button{flex:1;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--surface-3);color:var(--text);font-weight:600;font-size:12px;}
+  .resume-actions button.primary{background:var(--accent);color:#111;border-color:var(--accent);}
+
 </style>
 </head>
 <body>
@@ -362,6 +454,15 @@
     <div class="join-row">
       <input type="text" id="codeInput" class="mono" placeholder="EX: QUEST-4821" maxlength="12">
       <button class="primary-btn" id="joinBtn" style="width:auto;padding:12px 18px;">Entrar</button>
+    </div>
+  </div>
+
+  <div class="resume-room" id="resumeRoom" style="display:none;">
+    <strong>Voltar para a última sala</strong>
+    <span id="resumeRoomText"></span>
+    <div class="resume-actions">
+      <button class="primary" id="resumeBtn">Reentrar</button>
+      <button id="forgetRoomBtn">Esquecer</button>
     </div>
   </div>
 
@@ -412,15 +513,29 @@
     <div class="sync-hint">Deixa em 0 pra voz. Só aumenta se o som da tela compartilhada chegar antes da imagem.</div>
   </div>
 
+  <div class="audio-panel" id="audioPanel">
+    <div class="audio-row">
+      <label for="inputDevice">Microfone</label>
+      <select class="audio-select" id="inputDevice"></select>
+    </div>
+    <div class="audio-row">
+      <label for="outputDevice">Saída de áudio</label>
+      <select class="audio-select" id="outputDevice"></select>
+    </div>
+    <button class="audio-refresh" id="refreshAudioDevices" type="button">Atualizar dispositivos</button>
+    <div class="audio-hint">Se a Alexa estiver conectada ao PC/celular como saída de áudio, ela aparecerá aqui. O navegador só consegue usar dispositivos que o sistema disponibiliza para ele.</div>
+  </div>
+
   <div class="controls">
-    <button class="ctrl-btn" id="micBtn" title="Mudo">🎤</button>
-    <button class="ctrl-btn" id="camBtn" title="Câmera">📷</button>
-    <button class="ctrl-btn" id="speakerBtn" title="Mudar para o fone (viva-voz ligado)">🔊</button>
-    <button class="ctrl-btn" id="shareBtn" title="Compartilhar tela">🖥️</button>
-    <button class="ctrl-btn" id="qualityBtn" title="Qualidade da transmissão">🎚️</button>
-    <button class="ctrl-btn" id="syncBtn" title="Sincronizar áudio e vídeo">🔧</button>
-    <button class="ctrl-btn fullscreen" id="fullscreenBtn" title="Tela cheia (chamada toda)">⛶</button>
-    <button class="ctrl-btn hangup" id="hangupBtn" title="Sair">✕</button>
+    <button class="ctrl-btn" id="micBtn" data-tooltip="Microfone ligado" aria-label="Microfone ligado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path><path d="M8 22h8"></path></svg></button>
+    <button class="ctrl-btn" id="camBtn" data-tooltip="Câmera ligada" aria-label="Câmera ligada"><svg class="icon" viewBox="0 0 24 24"><path d="M14 8l4-2v12l-4-2z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg></button>
+    <button class="ctrl-btn" id="speakerBtn" data-tooltip="Trocar saída de áudio" aria-label="Trocar saída de áudio"><svg class="icon" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"></path><path d="M15 9a4 4 0 0 1 0 6"></path><path d="M18 6a8 8 0 0 1 0 12"></path></svg></button>
+    <button class="ctrl-btn" id="audioBtn" data-tooltip="Microfone e saída de áudio" aria-label="Microfone e saída de áudio"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path><path d="M8 21h8"></path></svg></button>
+    <button class="ctrl-btn" id="shareBtn" data-tooltip="Compartilhar tela" aria-label="Compartilhar tela"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg></button>
+    <button class="ctrl-btn" id="qualityBtn" data-tooltip="Qualidade da transmissão" aria-label="Qualidade da transmissão"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path><circle cx="9" cy="6" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="11" cy="18" r="2"></circle></svg></button>
+    <button class="ctrl-btn" id="syncBtn" data-tooltip="Sincronizar áudio e vídeo" aria-label="Sincronizar áudio e vídeo"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"></path><path d="M3 21v-5h5"></path></svg></button>
+    <button class="ctrl-btn fullscreen" id="fullscreenBtn" data-tooltip="Tela cheia" aria-label="Tela cheia"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3H3v5"></path><path d="M16 3h5v5"></path><path d="M21 16v5h-5"></path><path d="M3 16v5h5"></path></svg></button>
+    <button class="ctrl-btn hangup" id="hangupBtn" data-tooltip="Sair da chamada" aria-label="Sair da chamada"><svg class="icon" viewBox="0 0 24 24"><path d="M5 15c3.5-3 10.5-3 14 0"></path><path d="M8 13l-2 4"></path><path d="M16 13l2 4"></path></svg></button>
   </div>
 </div>
 
@@ -576,14 +691,18 @@ let roster = [];
 const peers = new Map();
 let dataConns = new Map();
 let audioCtx = null;
-let speakerMode = 'speaker'; // 'speaker' (viva-voz) | 'earpiece' (fone)
+let audioOutputNode = null;
+let audioOutputEl = null;
+let selectedInputDeviceId = '';
+let selectedOutputDeviceId = '';
+let speakerMode = 'speaker'; // compatibilidade com o botão antigo
 let localAnalyser = null;
 let localAnalyserData = null;
 let speakingRAF = null;
 const SPEAKING_THRESHOLD = 0.02;
 
 document.addEventListener('click', (e) => {
-  if(e.target.closest('.vol-btn') || e.target.closest('.vol-panel')) return;
+  if(e.target.closest('.vol-btn') || e.target.closest('.vol-panel') || e.target.closest('#audioPanel') || e.target.closest('#audioBtn') || e.target.closest('#speakerBtn')) return;
   document.querySelectorAll('.vol-panel.active').forEach(p => p.classList.remove('active'));
 });
 
@@ -593,17 +712,37 @@ function showError(msg){
 }
 
 function ensureAudioCtx(){
-  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Destino próprio: permite trocar a saída mesmo quando o navegador
+    // não implementa AudioContext.setSinkId().
+    audioOutputNode = audioCtx.createMediaStreamDestination();
+    audioOutputEl = document.createElement('audio');
+    audioOutputEl.autoplay = true;
+    audioOutputEl.playsInline = true;
+    audioOutputEl.srcObject = audioOutputNode.stream;
+    audioOutputEl.style.display = 'none';
+    document.body.appendChild(audioOutputEl);
+    audioOutputEl.play().catch(()=>{});
+  }
   if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   return audioCtx;
 }
 
 async function getLocalStream(){
   if(localStream) return localStream;
+  const audioConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true
+  };
+  if(selectedInputDeviceId) audioConstraints.deviceId = { exact: selectedInputDeviceId };
   localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    audio: audioConstraints
   });
+  const activeAudio = localStream.getAudioTracks()[0];
+  if(activeAudio) selectedInputDeviceId = activeAudio.getSettings?.().deviceId || selectedInputDeviceId;
   cameraTrack = localStream.getVideoTracks()[0];
   camOn = false;
   if(cameraTrack) cameraTrack.enabled = false;
@@ -627,9 +766,23 @@ function getCurrentTracks(){
   return [vTrack, aTrack].filter(Boolean);
 }
 
+function setMicButton(){
+  const btn = $('micBtn');
+  btn.classList.toggle('off', !micOn);
+  btn.dataset.tooltip = micOn ? 'Desligar microfone' : 'Ligar microfone';
+  btn.setAttribute('aria-label', micOn ? 'Desligar microfone' : 'Ligar microfone');
+  btn.innerHTML = micOn
+    ? '<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path><path d="M8 22h8"></path></svg>'
+    : '<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg>';
+}
+
 function updateCamUI(){
   $('camBtn').classList.toggle('off', !camOn);
-  $('camBtn').textContent = camOn ? '📷' : '🚫';
+  $('camBtn').dataset.tooltip = camOn ? 'Desligar câmera' : 'Ligar câmera';
+  $('camBtn').setAttribute('aria-label', camOn ? 'Desligar câmera' : 'Ligar câmera');
+  $('camBtn').innerHTML = camOn
+    ? '<svg class="icon" viewBox="0 0 24 24"><path d="M14 8l4-2v12l-4-2z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg>'
+    : '<svg class="icon" viewBox="0 0 24 24"><path d="M14 8l4-2v12l-4-2z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect><path d="M4 4l16 16"></path></svg>';
   $('myEmpty').style.display = (camOn || sharing) ? 'none' : 'flex';
 }
 
@@ -690,12 +843,14 @@ function createTile(id){
   const expandBtn = document.createElement('button');
   expandBtn.className = 'expand-btn';
   expandBtn.title = 'Tela cheia';
+  expandBtn.dataset.tooltip = 'Tela cheia';
   expandBtn.textContent = '⤢';
   expandBtn.onclick = () => tile.requestFullscreen?.().catch(()=>{});
 
   const volBtn = document.createElement('button');
   volBtn.className = 'vol-btn';
   volBtn.title = 'Volume / silenciar';
+  volBtn.dataset.tooltip = 'Volume / silenciar';
   volBtn.textContent = '🔊';
 
   const volPanel = document.createElement('div');
@@ -841,7 +996,7 @@ function applyAudioGraph(entry){
     analyser.fftSize = 512;
     analyser.smoothingTimeConstant = 0.6;
 
-    source.connect(delay).connect(gain).connect(ctx.destination);
+    source.connect(delay).connect(gain).connect(audioOutputNode || ctx.destination);
     source.connect(analyser); // derivação só pra medir nível, não afeta o som
 
     entry.audioSource = source;
@@ -900,6 +1055,7 @@ function speakingLoop(){
   speakingRAF = requestAnimationFrame(speakingLoop);
 }
 speakingLoop();
+setMicButton();
 
 function updateEmptyVisibility(entry){
   if(!entry || !entry.empty) return;
@@ -937,13 +1093,37 @@ function attachRemoteStream(entry, stream){
   if(entry.profile) updateTileProfile(entry);
 }
 
+function playJoinSound(){
+  try{
+    const ctx = ensureAudioCtx();
+    if(ctx.state === 'suspended') return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    osc.connect(gain).connect(audioOutputNode || ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.17);
+  }catch(e){}
+}
+
 function wireCall(call){
   const id = call.peer;
   let entry = peers.get(id);
-  if(!entry || !entry.tile){
+  const isNewParticipant = !entry || !entry.tile;
+  if(isNewParticipant){
+    const oldProfile = entry?.profile || null;
+    const oldCamState = entry?.remoteCamOn;
     const created = createTile(id);
-    entry = Object.assign(entry || {}, created, { call, id, profile: entry?.profile || null });
+    entry = Object.assign(entry || {}, created, { call, id, profile: oldProfile, remoteCamOn: oldCamState });
     peers.set(id, entry);
+    if(entry.profile) updateTileProfile(entry);
+    playJoinSound();
   } else {
     entry.call = call;
   }
@@ -1058,11 +1238,63 @@ function wireDataConn(conn){
   conn.on('error', () => dataConns.delete(id));
 }
 
-$('createBtn').onclick = async () => {
+// ---------- Reentrada na última sala ----------
+const ROOM_STATE_KEY = 'squadcall_last_room';
+
+function saveRoomState(code, host){
+  try{
+    localStorage.setItem(ROOM_STATE_KEY, JSON.stringify({ code, host: !!host, savedAt: Date.now() }));
+  }catch(e){}
+}
+
+function clearRoomState(){
+  try{ localStorage.removeItem(ROOM_STATE_KEY); }catch(e){}
+}
+
+function loadRoomState(){
+  try{
+    const raw = localStorage.getItem(ROOM_STATE_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(!s?.code) return null;
+    return s;
+  }catch(e){ return null; }
+}
+
+function renderResumeRoom(){
+  if(urlParams.get('room')) return;
+  const s = loadRoomState();
+  if(!s) return;
+  $('resumeRoom').style.display = 'block';
+  $('resumeRoomText').textContent = `${s.code} · ${s.host ? 'sala criada por você' : 'sala em que você entrou'}`;
+}
+
+async function reconnectToSavedRoom(){
+  const s = loadRoomState();
+  if(!s?.code) return;
+  $('resumeBtn').disabled = true;
+  $('resumeBtn').textContent = 'Entrando…';
+  $('codeInput').value = s.code;
+  if(s.host){
+    await createRoom(s.code, true);
+  }else{
+    await joinRoom(s.code);
+  }
+}
+
+$('resumeBtn').onclick = reconnectToSavedRoom;
+$('forgetRoomBtn').onclick = () => {
+  clearRoomState();
+  $('resumeRoom').style.display = 'none';
+};
+
+renderResumeRoom();
+
+async function createRoom(requestedCode = null, reconnecting = false){
   errorMsg.style.display = 'none';
   saveProfile();
   $('createBtn').disabled = true;
-  $('createBtn').textContent = 'Preparando câmera…';
+  $('createBtn').textContent = reconnecting ? 'Reconectando…' : 'Preparando câmera…';
   try{
     await getLocalStream();
   }catch(e){
@@ -1071,62 +1303,63 @@ $('createBtn').onclick = async () => {
     $('createBtn').textContent = 'Criar sala';
     return;
   }
-  roomCode = genCode();
+
+  roomCode = requestedCode || genCode();
   isHost = true;
   peer = new Peer(ROOM_PREFIX + roomCode, { config: ICE_CONFIG });
 
   peer.on('open', id => {
     myId = id;
+    saveRoomState(roomCode, true);
     const link = location.origin + location.pathname + '?room=' + roomCode;
     $('createResult').innerHTML = `
       <div class="cartridge">
         <div class="label">Código da sala</div>
         <div class="code mono">${roomCode}</div>
-        <div class="hint">Manda esse código (ou o link) pra galera — quantas pessoas quiser</div>
+        <div class="hint">Manda esse código (ou o link) pra galera.</div>
         <button class="copy-btn" id="copyBtn">Copiar link do convite</button>
       </div>
       <div class="status-line"><span class="pulse"></span>Esperando a galera entrar…</div>
     `;
     $('copyBtn').onclick = () => {
-      navigator.clipboard.writeText(link).then(() => {
+      const done = () => {
         $('copyBtn').textContent = 'Copiado ✓';
         setTimeout(()=> $('copyBtn').textContent = 'Copiar link do convite', 1500);
-      }).catch(() => {
+      };
+      navigator.clipboard?.writeText(link).then(done).catch(() => {
         const ta = document.createElement('textarea');
         ta.value = link; document.body.appendChild(ta); ta.select();
         try{ document.execCommand('copy'); }catch(e){}
-        document.body.removeChild(ta);
-        $('copyBtn').textContent = 'Copiado ✓';
-        setTimeout(()=> $('copyBtn').textContent = 'Copiar link do convite', 1500);
+        document.body.removeChild(ta); done();
       });
     };
     $('createBtn').style.display = 'none';
+    $('resumeRoom').style.display = 'none';
     enterCallUI();
+    setMicButton();
   });
 
-  peer.on('connection', conn => {
-    wireDataConn(conn);
-  });
-
+  peer.on('connection', conn => wireDataConn(conn));
   peer.on('call', call => {
     const streamToSend = new MediaStream(getCurrentTracks());
     call.answer(streamToSend);
     wireCall(call);
     ensureDataConn(call.peer);
   });
-
   peer.on('error', err => {
-    showError('Erro de conexão: ' + (err.type || err) + '. Tente criar a sala de novo.');
+    if(err.type === 'unavailable-id' && reconnecting){
+      showErrorInCall('A sala ainda está sendo encerrada pelo servidor. Tente reentrar em alguns segundos.');
+    }else{
+      showError('Erro de conexão: ' + (err.type || err) + '.');
+    }
     $('createBtn').disabled = false;
     $('createBtn').textContent = 'Criar sala';
   });
-};
+}
 
-$('joinBtn').onclick = async () => {
+async function joinRoom(code){
   errorMsg.style.display = 'none';
   saveProfile();
-  const code = $('codeInput').value.trim().toUpperCase();
-  if(!code){ showError('Digita o código da sala primeiro.'); return; }
   $('joinBtn').disabled = true;
   $('joinBtn').textContent = 'Entrando…';
   try{
@@ -1137,54 +1370,53 @@ $('joinBtn').onclick = async () => {
     $('joinBtn').textContent = 'Entrar';
     return;
   }
-  roomCode = code;
+
+  roomCode = code.trim().toUpperCase();
   isHost = false;
-  const hostId = ROOM_PREFIX + code;
+  saveRoomState(roomCode, false);
+  const hostId = ROOM_PREFIX + roomCode;
   peer = new Peer(undefined, { config: ICE_CONFIG });
 
   peer.on('open', id => {
     myId = id;
     enterCallUI();
-
+    setMicButton();
     const conn = peer.connect(hostId, { reliable: true });
     wireDataConn(conn);
     conn.on('open', () => {
       conn.send({ type: 'hello' });
       sendProfile(conn);
     });
-    conn.on('error', () => {
-      showError('Não achei essa sala. Confere o código com a galera.');
-    });
-
+    conn.on('error', () => showErrorInCall('Não achei essa sala. Confere o código com a galera.'));
     callPeer(hostId);
   });
-
   peer.on('connection', conn => wireDataConn(conn));
-
   peer.on('call', call => {
     const streamToSend = new MediaStream(getCurrentTracks());
     call.answer(streamToSend);
     wireCall(call);
     ensureDataConn(call.peer);
   });
-
   peer.on('error', err => {
     if(err.type === 'peer-unavailable'){
-      showError('Sala não encontrada. Confere se o código tá certo e se ela já criou a sala.');
-    } else {
+      showError('Sala não encontrada. Confere o código e se ela está aberta.');
+    }else{
       showError('Erro de conexão: ' + (err.type || err));
     }
     $('joinBtn').disabled = false;
     $('joinBtn').textContent = 'Entrar';
   });
-};
+}
+
+$('createBtn').onclick = () => createRoom();
+
+$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim().toUpperCase());
 
 $('micBtn').onclick = () => {
   ensureAudioCtx();
   micOn = !micOn;
   if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
-  $('micBtn').classList.toggle('off', !micOn);
-  $('micBtn').textContent = micOn ? '🎤' : '🔇';
+  setMicButton();
 };
 
 $('camBtn').onclick = () => {
@@ -1215,22 +1447,17 @@ $('shareBtn').onclick = async () => {
       const q = QUALITY_PRESETS[currentQuality];
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: q.frameRate, max: q.frameRate }, width: { ideal: q.width }, height: { ideal: q.height } },
-        audio: true
+        // O áudio da tela NÃO é enviado pelo mesmo canal da voz.
+        // Misturar o áudio capturado com a call é o que causa o eco (a pessoa
+        // pode capturar a própria voz que está saindo pelos alto-falantes).
+        // O microfone continua sendo a única faixa de áudio da chamada.
+        audio: { suppressLocalAudioPlayback: true }
       });
       const screenTrack = screenStream.getVideoTracks()[0];
       screenTrack.contentHint = 'motion';
       for(const sender of senders){
         await sender.replaceTrack(screenTrack);
         await applyQuality(sender);
-      }
-
-      const screenAudioTrack = screenStream.getAudioTracks()[0];
-      if(screenAudioTrack){
-        peers.forEach(entry => {
-          if(!entry.call) return;
-          const aSender = entry.call.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'audio');
-          if(aSender) aSender.replaceTrack(screenAudioTrack);
-        });
       }
 
       try{ await screenTrack.applyConstraints({ frameRate: { ideal: q.frameRate, max: q.frameRate } }); }catch(e){}
@@ -1267,15 +1494,6 @@ async function stopSharing(){
     if(cameraTrack) await sender.replaceTrack(cameraTrack);
   }
 
-  const micTrack = localStream ? localStream.getAudioTracks()[0] : null;
-  if(micTrack){
-    peers.forEach(entry => {
-      if(!entry.call) return;
-      const aSender = entry.call.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'audio');
-      if(aSender) aSender.replaceTrack(micTrack);
-    });
-  }
-
   if(screenStream){
     screenStream.getTracks().forEach(t => t.stop());
     screenStream = null;
@@ -1302,7 +1520,7 @@ $('fullscreenBtn').onclick = () => {
   }
 };
 document.addEventListener('fullscreenchange', () => {
-  $('fullscreenBtn').textContent = document.fullscreenElement ? '⤢' : '⛶';
+  $('fullscreenBtn').innerHTML = document.fullscreenElement ? '<svg class="icon" viewBox="0 0 24 24"><path d="M8 3H3v5"></path><path d="M16 3h5v5"></path><path d="M21 16v5h-5"></path><path d="M3 16v5h5"></path></svg>' : '<svg class="icon" viewBox="0 0 24 24"><path d="M9 3H3v6"></path><path d="M15 3h6v6"></path><path d="M21 15v6h-6"></path><path d="M3 15v6h6"></path></svg>';
   $('fullscreenBtn').classList.toggle('active', !!document.fullscreenElement);
 });
 
@@ -1313,6 +1531,7 @@ $('myExpandBtn').onclick = () => {
 $('syncBtn').onclick = () => {
   $('syncPanel').classList.toggle('active');
   $('qualityPanel').classList.remove('active');
+  $('audioPanel').classList.remove('active');
 };
 $('syncSlider').oninput = (e) => {
   const ms = parseInt(e.target.value, 10);
@@ -1324,6 +1543,7 @@ $('syncSlider').oninput = (e) => {
 $('qualityBtn').onclick = () => {
   $('qualityPanel').classList.toggle('active');
   $('syncPanel').classList.remove('active');
+  $('audioPanel').classList.remove('active');
 };
 document.querySelectorAll('.quality-opt').forEach(btn => {
   btn.onclick = async () => {
@@ -1338,62 +1558,154 @@ document.querySelectorAll('.quality-opt').forEach(btn => {
   };
 });
 
-// ---------- Viva-voz / fone (melhor esforço — depende do navegador/aparelho) ----------
-async function trySetSinkOnContext(deviceId){
-  if(audioCtx && typeof audioCtx.setSinkId === 'function'){
-    try{ await audioCtx.setSinkId(deviceId); return true; }catch(e){ return false; }
-  }
-  return false;
-}
-async function trySetSinkOnElements(deviceId){
-  if(typeof HTMLMediaElement === 'undefined' || !HTMLMediaElement.prototype.setSinkId) return false;
-  let ok = false;
-  const els = [$('myVideo'), ...Array.from(peers.values()).map(p => p.video)].filter(Boolean);
-  for(const el of els){
-    try{ await el.setSinkId(deviceId); ok = true; }catch(e){}
-  }
-  return ok;
-}
-
-$('speakerBtn').onclick = async () => {
-  ensureAudioCtx();
-  const supportsContextSink = !!(audioCtx && typeof audioCtx.setSinkId === 'function');
-  const supportsElementSink = typeof HTMLMediaElement !== 'undefined' && !!HTMLMediaElement.prototype.setSinkId;
-
-  if(!supportsContextSink && !supportsElementSink){
-    showErrorInCall('Esse navegador não deixa alternar viva-voz/fone por aqui (comum no iPhone/Safari). O som segue no viva-voz.');
-    return;
-  }
-
+// ---------- Dispositivos de áudio ----------
+async function listAudioDevices(){
+  if(!navigator.mediaDevices?.enumerateDevices) return;
   try{
+    // Antes de obter permissão, muitos navegadores escondem os nomes.
+    if(!localStream) await navigator.mediaDevices.getUserMedia({audio:true, video:false})
+      .then(s => s.getTracks().forEach(t => t.stop())).catch(()=>{});
+
     const devices = await navigator.mediaDevices.enumerateDevices();
+    const inputs = devices.filter(d => d.kind === 'audioinput');
     const outputs = devices.filter(d => d.kind === 'audiooutput');
-    const wantEarpiece = speakerMode === 'speaker';
-    const pick = outputs.find(d => {
-      const label = (d.label || '').toLowerCase();
-      return wantEarpiece
-        ? /fone|earpiece|receiver|headset/.test(label)
-        : /alto-falante|speaker/.test(label);
+    const inputSel = $('inputDevice');
+    const outputSel = $('outputDevice');
+
+    inputSel.innerHTML = '';
+    inputs.forEach((d,i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      opt.textContent = d.label || `Microfone ${i+1}`;
+      inputSel.appendChild(opt);
     });
-    const targetId = pick ? pick.deviceId : (wantEarpiece ? 'communications' : 'default');
+    outputSel.innerHTML = '';
+    outputs.forEach((d,i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      opt.textContent = d.label || `Saída ${i+1}`;
+      outputSel.appendChild(opt);
+    });
 
-    let applied = await trySetSinkOnContext(targetId);
-    applied = (await trySetSinkOnElements(targetId)) || applied;
+    if(selectedInputDeviceId && inputs.some(d => d.deviceId === selectedInputDeviceId))
+      inputSel.value = selectedInputDeviceId;
+    else if(inputs[0]){
+      selectedInputDeviceId = inputs[0].deviceId;
+      inputSel.value = selectedInputDeviceId;
+    }
 
-    if(applied){
-      speakerMode = wantEarpiece ? 'earpiece' : 'speaker';
-      $('speakerBtn').textContent = speakerMode === 'speaker' ? '🔊' : '📞';
-      $('speakerBtn').classList.toggle('active', speakerMode === 'earpiece');
-      $('speakerBtn').title = speakerMode === 'speaker' ? 'Mudar para o fone (viva-voz ligado)' : 'Mudar para viva-voz (fone ligado)';
-    } else {
-      showErrorInCall('Não consegui trocar a saída de áudio nesse aparelho.');
+    if(selectedOutputDeviceId && outputs.some(d => d.deviceId === selectedOutputDeviceId))
+      outputSel.value = selectedOutputDeviceId;
+    else {
+      const def = outputs.find(d => d.deviceId === 'default') || outputs[0];
+      if(def){
+        selectedOutputDeviceId = def.deviceId;
+        outputSel.value = selectedOutputDeviceId;
+      }
     }
   }catch(e){
-    showErrorInCall('Não consegui listar as saídas de áudio disponíveis.');
+    showErrorInCall('Não consegui listar os dispositivos de áudio.');
   }
+}
+
+async function changeInputDevice(deviceId){
+  if(!deviceId || !localStream) return;
+  try{
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: { exact: deviceId },
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
+      video: false
+    });
+    const newTrack = newStream.getAudioTracks()[0];
+    const oldTrack = localStream.getAudioTracks()[0];
+    if(!newTrack) throw new Error('no-audio-track');
+
+    const senders = [];
+    peers.forEach(entry => {
+      const sender = entry.call?.peerConnection?.getSenders().find(s => s.track?.kind === 'audio');
+      if(sender) senders.push(sender);
+    });
+    for(const sender of senders) await sender.replaceTrack(newTrack);
+
+    if(oldTrack) localStream.removeTrack(oldTrack);
+    localStream.addTrack(newTrack);
+    if(oldTrack) oldTrack.stop();
+
+    selectedInputDeviceId = newTrack.getSettings?.().deviceId || deviceId;
+    micOn = true;
+    $('micBtn').classList.remove('off');
+    setMicButton();
+    if(localAnalyser){
+      try{ localAnalyser.disconnect(); }catch(e){}
+      localAnalyser = null;
+    }
+    setupLocalAnalyser();
+    showErrorInCall('Microfone alterado.');
+  }catch(e){
+    showErrorInCall('Não consegui trocar o microfone. Verifique a permissão do dispositivo.');
+  }
+}
+
+async function setOutputDevice(deviceId){
+  if(!deviceId) return false;
+  ensureAudioCtx();
+  let applied = false;
+  if(audioCtx && typeof audioCtx.setSinkId === 'function'){
+    try{
+      await audioCtx.setSinkId(deviceId);
+      applied = true;
+    }catch(e){}
+  }
+  if(!applied && audioOutputEl && typeof audioOutputEl.setSinkId === 'function'){
+    try{
+      await audioOutputEl.setSinkId(deviceId);
+      applied = true;
+    }catch(e){}
+  }
+  if(applied){
+    selectedOutputDeviceId = deviceId;
+    $('outputDevice').value = deviceId;
+  }
+  return applied;
+}
+
+$('audioBtn').onclick = async (e) => {
+  e.stopPropagation();
+  $('audioPanel').classList.toggle('active');
+  $('qualityPanel').classList.remove('active');
+  $('syncPanel').classList.remove('active');
+  if($('audioPanel').classList.contains('active')) await listAudioDevices();
 };
 
+$('refreshAudioDevices').onclick = listAudioDevices;
+
+$('inputDevice').onchange = e => changeInputDevice(e.target.value);
+
+$('outputDevice').onchange = async e => {
+  const ok = await setOutputDevice(e.target.value);
+  if(!ok) showErrorInCall('Esse navegador não permite trocar a saída de áudio.');
+};
+
+$('speakerBtn').onclick = async () => {
+  // Mantém o botão de alto-falante como atalho para o painel de saídas.
+  $('audioPanel').classList.toggle('active');
+  $('qualityPanel').classList.remove('active');
+  $('syncPanel').classList.remove('active');
+  if($('audioPanel').classList.contains('active')) await listAudioDevices();
+};
+
+navigator.mediaDevices?.addEventListener?.('devicechange', () => {
+  if(callScreen.classList.contains('active') && $('audioPanel').classList.contains('active'))
+    listAudioDevices();
+});
+
 $('hangupBtn').onclick = () => {
+  // Guarda a sala para que "Sair" não obrigue a criar outro código.
+  if(roomCode) saveRoomState(roomCode, isHost);
   if(speakingRAF) cancelAnimationFrame(speakingRAF);
   peers.forEach(entry => { try{ entry.call?.close(); }catch(e){} });
   dataConns.forEach(c => { try{ c.close(); }catch(e){} });
@@ -1401,7 +1713,7 @@ $('hangupBtn').onclick = () => {
   if(localStream) localStream.getTracks().forEach(t => t.stop());
   if(screenStream) screenStream.getTracks().forEach(t => t.stop());
   if(audioCtx){ try{ audioCtx.close(); }catch(e){} }
-  location.reload();
+  location.href = location.pathname;
 };
 
 ['click','touchstart','keydown'].forEach(ev => {
