@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ms. - Statz</title>
+<title>Squad Call — chama a galera pra jogar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -696,6 +696,11 @@ let localStream = null;
 let cameraTrack = null;
 let screenStream = null;
 let screenAudioStream = null;
+let screenMixedAudioStream = null;
+let screenAudioContext = null;
+let screenAudioDestination = null;
+let screenMicGain = null;
+let screenSystemGain = null;
 let isHost = false;
 let roomCode = null;
 let micOn = true, camOn = true, sharing = false;
@@ -774,7 +779,8 @@ function getCurrentVideoStream(){
 function getCurrentTracks(){
   const curVideoStream = getCurrentVideoStream();
   const vTrack = curVideoStream ? curVideoStream.getVideoTracks()[0] : null;
-  const aTrack = localStream ? localStream.getAudioTracks()[0] : null;
+  const aTrack = (sharing && screenMixedAudioStream?.getAudioTracks()[0])
+    || (localStream ? localStream.getAudioTracks()[0] : null);
   return [vTrack, aTrack].filter(Boolean);
 }
 
@@ -1447,6 +1453,7 @@ $('micBtn').onclick = () => {
   ensureAudioCtx();
   micOn = !micOn;
   if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+  if(screenMicGain) screenMicGain.gain.value = micOn ? 1 : 0;
   setMicButton();
 };
 
@@ -1482,22 +1489,64 @@ $('shareBtn').onclick = async () => {
     }
     try{
       const q = QUALITY_PRESETS[currentQuality];
+
+      // audio:true faz o Chrome/Edge mostrar a opção "Compartilhar áudio"
+      // quando o tipo de captura escolhido permitir. O áudio só é enviado
+      // se o usuário marcar essa opção no seletor do navegador.
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: q.frameRate, max: q.frameRate }, width: { ideal: q.width }, height: { ideal: q.height } },
-        audio: false
+        audio: true
       });
 
-      // Segurança extra: compartilhamento é somente vídeo.
-      // A voz da call continua vindo exclusivamente do microfone.
-      screenStream.getAudioTracks().forEach(t => t.stop());
-      screenAudioStream = null;
-      screenMixedAudioStream = null;
-
       const screenTrack = screenStream.getVideoTracks()[0];
+      if(!screenTrack) throw new Error('no-screen-track');
       screenTrack.contentHint = 'motion';
+
+      screenAudioStream = screenStream.getAudioTracks().length
+        ? new MediaStream(screenStream.getAudioTracks()) : null;
+
+      // Mantém o microfone + áudio da tela em UMA faixa. O peer já espera
+      // uma faixa de áudio por chamada, então não substituímos a voz pelo
+      // áudio do PC.
+      if(screenAudioStream){
+        try{
+          screenAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+          screenAudioDestination = screenAudioContext.createMediaStreamDestination();
+          const micSource = screenAudioContext.createMediaStreamSource(localStream);
+          const systemSource = screenAudioContext.createMediaStreamSource(screenAudioStream);
+          screenMicGain = screenAudioContext.createGain();
+          screenSystemGain = screenAudioContext.createGain();
+          screenMicGain.gain.value = micOn ? 1 : 0;
+          screenSystemGain.gain.value = 1;
+          micSource.connect(screenMicGain).connect(screenAudioDestination);
+          systemSource.connect(screenSystemGain).connect(screenAudioDestination);
+          screenMixedAudioStream = screenAudioDestination.stream;
+
+          // Se o navegador aceitar, pede para não reproduzir localmente o áudio
+          // capturado. Isso ajuda a evitar o eco em navegadores compatíveis.
+          const capturedTrack = screenAudioStream.getAudioTracks()[0];
+          try{
+            await capturedTrack.applyConstraints({ suppressLocalAudioPlayback: true });
+          }catch(e){}
+        }catch(e){
+          screenMixedAudioStream = null;
+        }
+      } else {
+        screenMixedAudioStream = null;
+      }
+
       for(const sender of senders){
         await sender.replaceTrack(screenTrack);
         await applyQuality(sender);
+      }
+
+      const audioForCall = screenMixedAudioStream?.getAudioTracks()[0] || localStream?.getAudioTracks()[0];
+      if(audioForCall){
+        peers.forEach(entry => {
+          if(!entry.call) return;
+          const aSender = entry.call.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'audio');
+          if(aSender) aSender.replaceTrack(audioForCall).catch(()=>{});
+        });
       }
 
       try{ await screenTrack.applyConstraints({ frameRate: { ideal: q.frameRate, max: q.frameRate } }); }catch(e){}
@@ -1509,7 +1558,18 @@ $('shareBtn').onclick = async () => {
       $('myEmpty').style.display = 'none';
       broadcastCamState();
       screenTrack.onended = () => stopSharing();
-    }catch(e){}
+
+      if(screenAudioStream){
+        showErrorInCall('Áudio da transmissão ativado.');
+      } else {
+        showErrorInCall('Tela compartilhada sem áudio.');
+      }
+    }catch(e){
+      screenStream?.getTracks?.().forEach(t => t.stop());
+      screenStream = null;
+      screenAudioStream = null;
+      screenMixedAudioStream = null;
+    }
   } else {
     stopSharing();
   }
@@ -1534,6 +1594,25 @@ async function stopSharing(){
   for(const sender of senders){
     if(cameraTrack) await sender.replaceTrack(cameraTrack);
   }
+
+  const micTrack = localStream ? localStream.getAudioTracks()[0] : null;
+  if(micTrack){
+    peers.forEach(entry => {
+      if(!entry.call) return;
+      const aSender = entry.call.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'audio');
+      if(aSender) aSender.replaceTrack(micTrack).catch(()=>{});
+    });
+  }
+
+  if(screenAudioContext){
+    try{ screenAudioContext.close(); }catch(e){}
+  }
+  screenAudioContext = null;
+  screenAudioDestination = null;
+  screenMicGain = null;
+  screenSystemGain = null;
+  screenMixedAudioStream = null;
+  screenAudioStream = null;
 
   if(screenStream){
     screenStream.getTracks().forEach(t => t.stop());
@@ -1678,6 +1757,12 @@ async function changeInputDevice(deviceId){
     if(oldTrack) oldTrack.stop();
 
     selectedInputDeviceId = newTrack.getSettings?.().deviceId || deviceId;
+    if(screenAudioContext && screenAudioDestination && screenAudioStream){
+      try{
+        const newMicSource = screenAudioContext.createMediaStreamSource(localStream);
+        newMicSource.connect(screenMicGain || screenAudioContext.createGain()).connect(screenAudioDestination);
+      }catch(e){}
+    }
     micOn = true;
     $('micBtn').classList.remove('off');
     setMicButton();
