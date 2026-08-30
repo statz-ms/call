@@ -1515,6 +1515,26 @@ async function renegotiateAllCalls(){
   }
 }
 
+
+function scheduleParticipantCleanup(id, delay = 1400){
+  setTimeout(() => {
+    const entry = peers.get(id);
+    const conn = dataConns.get(id);
+
+    const hasOpenData = !!(conn && conn.open);
+    const hasLiveCall = !!(entry?.call && entry.call.open !== false);
+
+    // If neither the data channel nor the media call came back, the peer is gone.
+    if(!hasOpenData && !hasLiveCall){
+      removeTile(id);
+      peers.delete(id);
+      dataConns.delete(id);
+      connectAttempts.delete(id);
+      if(isHost) roster = roster.filter(x => x !== id);
+    }
+  }, delay);
+}
+
 function wireCall(call){
   const id = call.peer;
   let entry = peers.get(id);
@@ -1538,8 +1558,9 @@ function wireCall(call){
     if(current?.call === call){
       current.call = null;
       current.stream = null;
-      // Durante uma renegociação a tile continua existindo.
-      if(!sharing && !current.tile) removeTile(id);
+      // Não remove imediatamente: compartilhamento de tela pode estar renegociando.
+      // Se o participante realmente saiu, o data channel também fecha e o cleanup remove a tile.
+      scheduleParticipantCleanup(id);
     }
   });
   call.on('error', () => {
@@ -1547,7 +1568,7 @@ function wireCall(call){
     if(current?.call === call){
       current.call = null;
       current.stream = null;
-      if(!current.tile) removeTile(id);
+      scheduleParticipantCleanup(id);
     }
   });
 }
@@ -1749,10 +1770,14 @@ function wireDataConn(conn){
   });
   conn.on('data', msg => handleDataMessage(id, msg));
   conn.on('close', () => {
-    dataConns.delete(id);
+    if(dataConns.get(id) === conn) dataConns.delete(id);
     if(isHost) roster = roster.filter(x => x !== id);
+    scheduleParticipantCleanup(id);
   });
-  conn.on('error', () => dataConns.delete(id));
+  conn.on('error', () => {
+    if(dataConns.get(id) === conn) dataConns.delete(id);
+    scheduleParticipantCleanup(id);
+  });
 }
 
 // ---------- Reentrada na última sala ----------
