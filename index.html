@@ -453,6 +453,15 @@
     .ctrl-btn{ width:44px; height:44px; }
   }
 
+
+  .desktop-only{display:none}
+  html[data-squadcall-desktop="1"] .desktop-only{display:block}
+  .native-audio-status{
+    margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4
+  }
+  .native-audio-status.active{color:#8bc48b}
+  .native-audio-status.error{color:#e07070}
+
 </style>
 <style>
 #authGate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 0%,rgba(192,192,192,.08),transparent 45%),#090909}
@@ -463,6 +472,14 @@
 .auth-pane{display:none;margin-top:16px}.auth-pane.active{display:block}.auth-label{font-size:12px;color:#aaa;margin:12px 0 6px;display:block}
 .auth-input{width:100%;box-sizing:border-box;background:#242424;border:1px solid #3a3a3a;color:#fff;padding:11px 12px;border-radius:9px;font:inherit}.auth-input:focus{outline:2px solid #c0c0c0;outline-offset:1px}
 .auth-submit{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:#c0c0c0;color:#111;font-weight:800;cursor:pointer}.auth-msg{display:none;margin-top:12px;padding:10px;border-radius:9px;font-size:11px;line-height:1.4}.auth-msg.show{display:block}.auth-msg.error{background:#351818;color:#ffb7b7}.auth-msg.ok{background:#17351d;color:#b9ffc5}.auth-note{font-size:10px;color:#777;line-height:1.45;margin-top:12px}
+
+.auth-debug{display:none;margin-top:10px;border:1px solid #3a3a3a;background:#101010;border-radius:9px;padding:10px}
+.auth-debug.show{display:block}
+.auth-debug-title{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#aaa;margin-bottom:7px}
+.auth-debug pre{margin:0;white-space:pre-wrap;word-break:break-word;font:10px/1.45 'JetBrains Mono',monospace;color:#cfcfcf;max-height:180px;overflow:auto}
+.auth-debug button{border:1px solid #444;background:#202020;color:#ddd;border-radius:7px;padding:5px 8px;font-size:9px;font-weight:700;cursor:pointer}
+.auth-debug button:hover{border-color:#777}
+
 #adminOpenBtn{display:none;position:fixed;top:16px;left:16px;z-index:70;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}#adminOpenBtn.show{display:block}
 #adminModal{display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}#adminModal.active{display:flex}.admin-box{width:min(760px,96vw);max-height:88vh;overflow:auto;background:#151515;border:1px solid #333;border-radius:18px;padding:20px}.admin-head{display:flex;justify-content:space-between;align-items:flex-start}.admin-head h2{margin:0;font-size:20px}.admin-close{border:0;background:transparent;color:#aaa;font-size:25px;cursor:pointer}.admin-section{border:1px solid #2f2f2f;border-radius:12px;padding:14px;margin-top:12px;background:#1b1b1b}.admin-section h3{font-size:12px;margin:0 0 10px}.admin-create{display:flex;gap:8px}.admin-create input{min-width:0;flex:1;background:#242424;color:#fff;border:1px solid #333;border-radius:8px;padding:9px;font:inherit;font-size:11px}.admin-btn{border:1px solid #3a3a3a;background:#252525;color:#eee;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:700;cursor:pointer}.admin-btn.primary{color:#c0c0c0;border-color:#777}.admin-btn.danger{color:#ffb4b4}.admin-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #2a2a2a}.admin-row:first-child{border-top:0}.admin-name{font-size:12px;font-weight:700}.admin-meta{font-size:10px;color:#777;margin-top:3px}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-key{font:700 14px 'JetBrains Mono',monospace;color:#8bc48b;letter-spacing:.05em}@media(max-width:600px){.admin-create{flex-direction:column}.admin-row{flex-direction:column}.admin-actions{justify-content:flex-start}}
 
@@ -506,6 +523,10 @@ body.in-call #logoutFab{display:none!important;}
       <div class="auth-note">A conta ficará aguardando a aprovação do administrador.</div>
     </div>
     <div id="authMsg" class="auth-msg"></div>
+    <div id="authDebug" class="auth-debug">
+      <div class="auth-debug-title"><span>Diagnóstico da API</span><button type="button" id="copyAuthDebug">Copiar</button></div>
+      <pre id="authDebugText"></pre>
+    </div>
   </div>
 </div>
 <button id="adminOpenBtn">👑 Admin</button>
@@ -620,6 +641,15 @@ body.in-call #logoutFab{display:none!important;}
       <label for="outputDevice">Saída de áudio</label>
       <select class="audio-select" id="outputDevice"></select>
     </div>
+    <div class="desktop-only" id="nativeAppAudioBox">
+      <div class="audio-row">
+        <label for="nativeAppAudioProcess">Áudio do aplicativo (Desktop)</label>
+        <select class="audio-select" id="nativeAppAudioProcess">
+          <option value="">Desativado</option>
+        </select>
+      </div>
+      <div class="native-audio-status" id="nativeAppAudioStatus">Selecione um jogo/app. O SquadCall vai capturar somente o áudio desse processo.</div>
+    </div>
     <button class="audio-refresh" id="refreshAudioDevices" type="button">Atualizar dispositivos</button>
     <div class="audio-hint">Se a Alexa estiver conectada ao PC/celular como saída de áudio, ela aparecerá aqui. O navegador só consegue usar dispositivos que o sistema disponibiliza para ele.</div>
   </div>
@@ -649,7 +679,7 @@ body.in-call #logoutFab{display:none!important;}
 const $ = id => document.getElementById(id);
 
 // ---------- Login / cadastro / sessão offline ----------
-const AUTH_API = window.SQUADCALL_AUTH_API || 'https://remain-herbs-lease-tolerance.trycloudflare.com';
+const AUTH_API = window.SQUADCALL_AUTH_API || 'https://characterization-len-benjamin-scroll.trycloudflare.com';
 const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
 const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
@@ -667,9 +697,74 @@ async function verifySessionToken(token){try{const {p,payload}=decodeJwt(token);
 function getSession(){try{return localStorage.getItem(AUTH_TOKEN_KEY)||''}catch(e){return ''}}
 function saveSession(token,user){localStorage.setItem(AUTH_TOKEN_KEY,token);authUser=user;}
 function clearSession(){localStorage.removeItem(AUTH_TOKEN_KEY);authUser=null;}
-async function authApi(path,options={}){const h={'Content-Type':'application/json',...(options.headers||{})};const token=getSession();if(token)h.Authorization='Bearer '+token;const r=await fetch(AUTH_API.replace(/\/$/,'')+path,{...options,headers:h});let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Não foi possível falar com a API.');return d;}
+let lastAuthDebug='';
+function setAuthDebug(info){
+  lastAuthDebug=String(info||'');
+  const box=$('authDebug'), pre=$('authDebugText');
+  if(pre)pre.textContent=lastAuthDebug;
+  if(box)box.classList.toggle('show',!!lastAuthDebug);
+  if(lastAuthDebug)console.error('[SquadCall AUTH DEBUG]\n'+lastAuthDebug);
+}
+function clearAuthDebug(){
+  lastAuthDebug='';
+  $('authDebug')?.classList.remove('show');
+  if($('authDebugText'))$('authDebugText').textContent='';
+}
+$('copyAuthDebug')?.addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(lastAuthDebug);$('copyAuthDebug').textContent='Copiado!';setTimeout(()=>{if($('copyAuthDebug'))$('copyAuthDebug').textContent='Copiar';},1200);}
+  catch(e){alert(lastAuthDebug);}
+});
+async function authApi(path,options={}){
+  const h={'Content-Type':'application/json',...(options.headers||{})};
+  const token=getSession();
+  if(token)h.Authorization='Bearer '+token;
+  const url=AUTH_API.replace(/\/$/,'')+path;
+  const method=(options.method||'GET').toUpperCase();
+  const started=performance.now();
+  clearAuthDebug();
+
+  try{
+    console.log(`[SquadCall AUTH] ${method} ${url}`);
+    const r=await fetch(url,{...options,headers:h});
+    const elapsed=Math.round(performance.now()-started);
+    const raw=await r.text();
+
+    let d={};
+    try{d=raw?JSON.parse(raw):{};}catch(e){}
+
+    if(!r.ok){
+      const serverMessage=(d&&d.error)||raw||`HTTP ${r.status}`;
+      setAuthDebug(
+        `URL: ${url}\n`+
+        `Método: ${method}\n`+
+        `Status: ${r.status} ${r.statusText||''}\n`+
+        `Tempo: ${elapsed} ms\n`+
+        `Resposta: ${String(serverMessage).slice(0,1200)}`
+      );
+      throw new Error((d&&d.error)||`API respondeu HTTP ${r.status}. Veja o diagnóstico abaixo.`);
+    }
+
+    console.log(`[SquadCall AUTH] OK ${r.status} em ${elapsed}ms`);
+    return d;
+  }catch(e){
+    if(!lastAuthDebug){
+      const elapsed=Math.round(performance.now()-started);
+      const online=typeof navigator!=='undefined'?navigator.onLine:'?';
+      setAuthDebug(
+        `URL: ${url}\n`+
+        `Método: ${method}\n`+
+        `Status: SEM RESPOSTA HTTP\n`+
+        `Tempo: ${elapsed} ms\n`+
+        `navigator.onLine: ${online}\n`+
+        `Erro do navegador/WebView: ${e?.name||'Error'}: ${e?.message||String(e)}\n\n`+
+        `Isso normalmente indica bloqueio antes de chegar ao Express (CORS, TLS, DNS, túnel ou WebView).`
+      );
+    }
+    throw e;
+  }
+}
 function authMessage(text,ok=false){const e=$('authMsg');e.textContent=text;e.className='auth-msg show '+(ok?'ok':'error');}
-window.authTab = function authTab(which){$('authLoginTab').classList.toggle('active',which==='login');$('authRegisterTab').classList.toggle('active',which==='register');$('authLoginPane').classList.toggle('active',which==='login');$('authRegisterPane').classList.toggle('active',which==='register');$('authMsg').className='auth-msg';};
+window.authTab = function authTab(which){$('authLoginTab').classList.toggle('active',which==='login');$('authRegisterTab').classList.toggle('active',which==='register');$('authLoginPane').classList.toggle('active',which==='login');$('authRegisterPane').classList.toggle('active',which==='register');$('authMsg').className='auth-msg';clearAuthDebug();};
 $('authLoginTab').onclick=()=>window.authTab('login');$('authRegisterTab').onclick=()=>window.authTab('register');
 $('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
 $('authRegBtn').onclick=async()=>{try{const username=$('authRegUser').value.trim(),name=$('authRegName').value.trim()||username,password=$('authRegPass').value,p2=$('authRegPass2').value,key=$('authRegKey').value.trim().toUpperCase();if(!username||!password||!key)throw new Error('Preencha usuário, senha e KEY.');if(password!==p2)throw new Error('As senhas não coincidem.');await authApi('/api/auth/register',{method:'POST',body:JSON.stringify({username,display_name:name,password,invite_key:key})});authTab('login');$('authLoginUser').value=username;authMessage('Conta criada. Aguarde sua aprovação pelo administrador.',true);}catch(e){authMessage(e.message);}};
@@ -841,6 +936,18 @@ let audioOutputNode = null;
 let audioOutputEl = null;
 let selectedInputDeviceId = '';
 let selectedOutputDeviceId = '';
+let nativeAppAudioActive = false;
+let nativeAppAudioPid = 0;
+let nativeAppAudioChannel = null;
+let nativeAppAudioWorklet = null;
+let nativeAppRawDestination = null;
+let nativeAppMixedAudioStream = null;
+let nativeAppMixDestination = null;
+let nativeAppMicSource = null;
+let nativeAppRawSource = null;
+let nativeAppMicGain = null;
+let nativeAppGameGain = null;
+let nativeAppProcessorReady = false;
 let speakerMode = 'speaker'; // compatibilidade com o botão antigo
 let localAnalyser = null;
 let localAnalyserData = null;
@@ -995,11 +1102,16 @@ function getCurrentVideoStream(){
   return (sharing && screenStream) ? screenStream : localStream;
 }
 
+function getCurrentOutgoingAudioTrack(){
+  return (nativeAppAudioActive && nativeAppMixedAudioStream?.getAudioTracks()[0])
+    || (sharing && screenMixedAudioStream?.getAudioTracks()[0])
+    || (localStream ? localStream.getAudioTracks()[0] : null);
+}
+
 function getCurrentTracks(){
   const curVideoStream = getCurrentVideoStream();
   const vTrack = curVideoStream ? curVideoStream.getVideoTracks()[0] : null;
-  const aTrack = (sharing && screenMixedAudioStream?.getAudioTracks()[0])
-    || (localStream ? localStream.getAudioTracks()[0] : null);
+  const aTrack = getCurrentOutgoingAudioTrack();
   return [vTrack, aTrack].filter(Boolean);
 }
 
@@ -1476,8 +1588,7 @@ function playJoinSound(){
 function resyncSenders(call){
   if(!call || !call.peerConnection) return;
   const videoTrack = getCurrentVideoStream()?.getVideoTracks()[0] || null;
-  const audioTrack = (sharing && screenMixedAudioStream?.getAudioTracks()[0])
-    || (localStream ? localStream.getAudioTracks()[0] : null);
+  const audioTrack = getCurrentOutgoingAudioTrack();
   const senders = call.peerConnection.getSenders();
   const vSender = senders.find(s => s.track && s.track.kind === 'video');
   const aSender = senders.find(s => s.track && s.track.kind === 'audio');
@@ -1492,8 +1603,7 @@ function resyncSenders(call){
 
 async function switchAllOutgoingTracks(){
   const videoTrack = getCurrentVideoStream()?.getVideoTracks()[0] || null;
-  const audioTrack = (sharing && screenMixedAudioStream?.getAudioTracks()[0])
-    || (localStream ? localStream.getAudioTracks()[0] : null);
+  const audioTrack = getCurrentOutgoingAudioTrack();
 
   const jobs = [];
   peers.forEach(entry => {
@@ -1998,6 +2108,7 @@ $('micBtn').onclick = () => {
   micOn = !micOn;
   if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
   if(screenMicGain) screenMicGain.gain.value = micOn ? 1 : 0;
+  if(nativeAppMicGain) nativeAppMicGain.gain.value = micOn ? 1 : 0;
   setMicButton();
   broadcastMicState();
 };
@@ -2036,7 +2147,12 @@ $('shareBtn').onclick = async () => {
       // a causa mais comum do eco quando se compartilha tela com áudio.
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: q.frameRate, max: q.frameRate }, width: { ideal: q.width }, height: { ideal: q.height } },
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: false }
+        // Quando a captura nativa por aplicativo está ativa, NÃO pedimos áudio
+        // do sistema/tela. Isso evita áudio duplicado e, principalmente, evita
+        // recapturar a voz dos participantes da chamada.
+        audio: nativeAppAudioActive
+          ? false
+          : { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: false }
       });
 
       const screenTrack = screenStream.getVideoTracks()[0];
@@ -2083,7 +2199,9 @@ $('shareBtn').onclick = async () => {
       // recriar MediaConnections aqui fazia aparecer um segundo tile da mesma pessoa.
       await switchAllOutgoingTracks();
 
-      if(screenAudioStream){
+      if(nativeAppAudioActive){
+        showErrorInCall('Tela + áudio isolado do aplicativo ativados. A voz da call não entra na transmissão.', 6000);
+      } else if(screenAudioStream){
         showErrorInCall('Áudio ativado. Pra evitar eco, prefira compartilhar uma aba específica (não a tela toda).', 6000);
       } else {
         showErrorInCall('Tela compartilhada sem áudio.');
@@ -2220,6 +2338,226 @@ document.querySelectorAll('.quality-opt').forEach(btn => {
   };
 });
 
+
+// ---------- Áudio nativo por aplicativo (SquadCall Desktop / Windows) ----------
+function setNativeAudioStatus(text, kind=''){
+  const el = $('nativeAppAudioStatus');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.toggle('active', kind === 'active');
+  el.classList.toggle('error', kind === 'error');
+}
+
+async function ensureNativeAudioProcessor(){
+  if(nativeAppProcessorReady) return true;
+  if(!window.__TAURI__?.core?.invoke || !window.__TAURI__?.core?.Channel) return false;
+
+  const ctx = ensureAudioCtx();
+  const source = `
+    class SquadCallPcmProcessor extends AudioWorkletProcessor {
+      constructor(){
+        super();
+        this.queue = [];
+        this.offsetFrames = 0;
+        this.port.onmessage = (e) => {
+          if(e.data instanceof ArrayBuffer){
+            this.queue.push(new Float32Array(e.data));
+          }
+        };
+      }
+      process(inputs, outputs){
+        const out = outputs[0];
+        if(!out || !out.length) return true;
+        const frames = out[0].length;
+        for(let i=0;i<frames;i++){
+          let left = 0, right = 0;
+          while(this.queue.length){
+            const cur = this.queue[0];
+            const frameCount = Math.floor(cur.length / 2);
+            if(this.offsetFrames < frameCount){
+              const p = this.offsetFrames * 2;
+              left = cur[p] || 0;
+              right = cur[p+1] || left;
+              this.offsetFrames++;
+              break;
+            }
+            this.queue.shift();
+            this.offsetFrames = 0;
+          }
+          out[0][i] = left;
+          if(out[1]) out[1][i] = right;
+        }
+        return true;
+      }
+    }
+    registerProcessor('squadcall-pcm-processor', SquadCallPcmProcessor);
+  `;
+  const url = URL.createObjectURL(new Blob([source], {type:'text/javascript'}));
+  try{
+    await ctx.audioWorklet.addModule(url);
+    nativeAppProcessorReady = true;
+    return true;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function disconnectNativeMixNodes(){
+  for(const node of [nativeAppMicSource, nativeAppRawSource, nativeAppMicGain, nativeAppGameGain]){
+    try{ node?.disconnect?.(); }catch(e){}
+  }
+  nativeAppMicSource = null;
+  nativeAppRawSource = null;
+  nativeAppMicGain = null;
+  nativeAppGameGain = null;
+}
+
+function rebuildNativeAppMix(){
+  if(!nativeAppAudioActive || !nativeAppRawDestination || !localStream) return;
+  const ctx = ensureAudioCtx();
+  disconnectNativeMixNodes();
+
+  nativeAppMixDestination = ctx.createMediaStreamDestination();
+  nativeAppMicSource = ctx.createMediaStreamSource(localStream);
+  nativeAppRawSource = ctx.createMediaStreamSource(nativeAppRawDestination.stream);
+  nativeAppMicGain = ctx.createGain();
+  nativeAppGameGain = ctx.createGain();
+  nativeAppMicGain.gain.value = micOn ? 1 : 0;
+  nativeAppGameGain.gain.value = 1;
+
+  nativeAppMicSource.connect(nativeAppMicGain).connect(nativeAppMixDestination);
+  nativeAppRawSource.connect(nativeAppGameGain).connect(nativeAppMixDestination);
+  nativeAppMixedAudioStream = nativeAppMixDestination.stream;
+}
+
+async function refreshNativeAudioApps(){
+  const sel = $('nativeAppAudioProcess');
+  if(!sel || !window.__TAURI__?.core?.invoke) return;
+  const previous = String(nativeAppAudioPid || '');
+  sel.disabled = true;
+  setNativeAudioStatus('Procurando aplicativos com sessão de áudio no Windows…');
+  try{
+    const apps = await window.__TAURI__.core.invoke('list_audio_apps');
+    sel.innerHTML = '<option value="">Desativado</option>';
+    (apps || []).forEach(app => {
+      const opt = document.createElement('option');
+      opt.value = String(app.pid);
+      opt.textContent = `${app.name} — PID ${app.pid}${String(app.state).toLowerCase()==='active' ? ' 🔊' : ''}`;
+      sel.appendChild(opt);
+    });
+    if(previous && (apps || []).some(a => String(a.pid) === previous)){
+      sel.value = previous;
+    }
+    setNativeAudioStatus(
+      apps?.length
+        ? 'Escolha o jogo/app. 🔊 indica uma sessão de áudio ativa.'
+        : 'Nenhum aplicativo com sessão de áudio foi encontrado. Abra o jogo e reproduza algum som.'
+    );
+  }catch(e){
+    setNativeAudioStatus('Não consegui listar os aplicativos: ' + String(e), 'error');
+  }finally{
+    sel.disabled = false;
+  }
+}
+
+async function stopNativeAppAudio({silent=false}={}){
+  try{
+    if(window.__TAURI__?.core?.invoke) await window.__TAURI__.core.invoke('stop_app_audio');
+  }catch(e){}
+  nativeAppAudioActive = false;
+  nativeAppAudioPid = 0;
+
+  disconnectNativeMixNodes();
+  try{ nativeAppAudioWorklet?.disconnect?.(); }catch(e){}
+  nativeAppAudioWorklet = null;
+  nativeAppRawDestination = null;
+  nativeAppMixedAudioStream = null;
+  nativeAppMixDestination = null;
+
+  const sel = $('nativeAppAudioProcess');
+  if(sel) sel.value = '';
+  await switchAllOutgoingTracks();
+  if(!silent) setNativeAudioStatus('Áudio por aplicativo desativado.');
+}
+
+async function startNativeAppAudio(pid){
+  if(!pid){
+    await stopNativeAppAudio();
+    return;
+  }
+  if(!window.__TAURI__?.core?.invoke || !window.__TAURI__?.core?.Channel){
+    setNativeAudioStatus('Esse recurso só existe no SquadCall Desktop.', 'error');
+    return;
+  }
+
+  await stopNativeAppAudio({silent:true});
+  const ok = await ensureNativeAudioProcessor();
+  if(!ok){
+    setNativeAudioStatus('A ponte de áudio do Desktop não está disponível.', 'error');
+    return;
+  }
+
+  const ctx = ensureAudioCtx();
+  nativeAppRawDestination = ctx.createMediaStreamDestination();
+  nativeAppAudioWorklet = new AudioWorkletNode(ctx, 'squadcall-pcm-processor', {
+    numberOfInputs: 0,
+    numberOfOutputs: 1,
+    outputChannelCount: [2]
+  });
+  nativeAppAudioWorklet.connect(nativeAppRawDestination);
+
+  const Channel = window.__TAURI__.core.Channel;
+  nativeAppAudioChannel = new Channel();
+  nativeAppAudioChannel.onmessage = (payload) => {
+    try{
+      let buffer = payload;
+      if(payload instanceof Uint8Array){
+        buffer = payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength);
+      }else if(Array.isArray(payload)){
+        buffer = new Uint8Array(payload).buffer;
+      }
+      if(buffer instanceof ArrayBuffer){
+        // Copia antes de transferir para não depender do buffer interno do IPC.
+        const copy = buffer.slice(0);
+        nativeAppAudioWorklet?.port?.postMessage(copy, [copy]);
+      }
+    }catch(e){}
+  };
+
+  setNativeAudioStatus('Iniciando captura isolada…');
+  try{
+    const format = await window.__TAURI__.core.invoke('start_app_audio', {
+      pid: Number(pid),
+      onAudio: nativeAppAudioChannel
+    });
+    nativeAppAudioPid = Number(pid);
+    nativeAppAudioActive = true;
+    rebuildNativeAppMix();
+    await switchAllOutgoingTracks();
+
+    const opt = $('nativeAppAudioProcess')?.selectedOptions?.[0];
+    const label = opt?.textContent?.replace(/\s—\sPID.*$/,'') || `PID ${pid}`;
+    setNativeAudioStatus(
+      `${label}: áudio isolado ATIVO (${format.sampleRate/1000} kHz). Ao compartilhar tela, o áudio geral do PC será ignorado.`,
+      'active'
+    );
+    showErrorInCall('Áudio isolado do aplicativo ativado. Agora pode compartilhar a janela do jogo.', 6000);
+  }catch(e){
+    nativeAppAudioActive = false;
+    nativeAppAudioPid = 0;
+    try{ nativeAppAudioWorklet?.disconnect?.(); }catch(err){}
+    nativeAppAudioWorklet = null;
+    nativeAppRawDestination = null;
+    nativeAppMixedAudioStream = null;
+    setNativeAudioStatus('Falha ao capturar esse aplicativo: ' + String(e), 'error');
+  }
+}
+
+$('nativeAppAudioProcess')?.addEventListener('change', async e => {
+  await startNativeAppAudio(e.target.value);
+});
+
+
 // ---------- Dispositivos de áudio ----------
 async function listAudioDevices(){
   if(!navigator.mediaDevices?.enumerateDevices) return;
@@ -2286,18 +2624,12 @@ async function changeInputDevice(deviceId){
     const oldTrack = localStream.getAudioTracks()[0];
     if(!newTrack) throw new Error('no-audio-track');
 
-    const senders = [];
-    peers.forEach(entry => {
-      const sender = entry.call?.peerConnection?.getSenders().find(s => s.track?.kind === 'audio');
-      if(sender) senders.push(sender);
-    });
-    for(const sender of senders) await sender.replaceTrack(newTrack);
-
     if(oldTrack) localStream.removeTrack(oldTrack);
     localStream.addTrack(newTrack);
     if(oldTrack) oldTrack.stop();
 
     selectedInputDeviceId = newTrack.getSettings?.().deviceId || deviceId;
+    if(nativeAppAudioActive) rebuildNativeAppMix();
     if(screenAudioContext && screenAudioDestination && screenAudioStream){
       try{
         const newMicSource = screenAudioContext.createMediaStreamSource(localStream);
@@ -2312,6 +2644,7 @@ async function changeInputDevice(deviceId){
       localAnalyser = null;
     }
     setupLocalAnalyser();
+    await switchAllOutgoingTracks();
     showErrorInCall('Microfone alterado.');
   }catch(e){
     showErrorInCall('Não consegui trocar o microfone. Verifique a permissão do dispositivo.');
@@ -2341,7 +2674,10 @@ async function setOutputDevice(deviceId){
   return applied;
 }
 
-$('refreshAudioDevices').onclick = listAudioDevices;
+$('refreshAudioDevices').onclick = async () => {
+  await listAudioDevices();
+  if(window.__TAURI__?.core?.invoke) await refreshNativeAudioApps();
+};
 
 $('inputDevice').onchange = e => changeInputDevice(e.target.value);
 
@@ -2356,6 +2692,7 @@ navigator.mediaDevices?.addEventListener?.('devicechange', () => {
 });
 
 $('hangupBtn').onclick = () => {
+  stopNativeAppAudio({silent:true}).catch(()=>{});
   // Guarda a sala para que "Sair" não obrigue a criar outro código.
   if(roomCode) saveRoomState(roomCode, isHost);
   if(speakingRAF) cancelAnimationFrame(speakingRAF);
@@ -2378,5 +2715,23 @@ $('hangupBtn').onclick = () => {
 });
 </script>
 <div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5.2 · admin fix</div>
+
+<script>
+/* SquadCall Desktop bridge bootstrap.
+   In a normal browser this does absolutely nothing. */
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    if (window.__TAURI__?.core?.invoke) {
+      document.documentElement.dataset.squadcallDesktop = '1';
+      const info = await window.__TAURI__.core.invoke('desktop_info');
+      console.log('[SquadCall Desktop]', info);
+      setTimeout(() => refreshNativeAudioApps?.(), 500);
+    }
+  } catch (e) {
+    console.warn('[SquadCall Desktop] bridge indisponível:', e);
+  }
+});
+</script>
+
 </body>
 </html>
