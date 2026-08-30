@@ -1490,6 +1490,31 @@ function resyncSenders(call){
 }
 
 
+async function switchAllOutgoingTracks(){
+  const videoTrack = getCurrentVideoStream()?.getVideoTracks()[0] || null;
+  const audioTrack = (sharing && screenMixedAudioStream?.getAudioTracks()[0])
+    || (localStream ? localStream.getAudioTracks()[0] : null);
+
+  const jobs = [];
+  peers.forEach(entry => {
+    const pc = entry?.call?.peerConnection;
+    if(!pc) return;
+    const senders = pc.getSenders();
+    const vSender = senders.find(s => s.track && s.track.kind === 'video');
+    const aSender = senders.find(s => s.track && s.track.kind === 'audio');
+
+    if(vSender && videoTrack){
+      jobs.push(vSender.replaceTrack(videoTrack).then(() => {
+        if(sharing) return applyQuality(vSender);
+      }).catch(()=>{}));
+    }
+    if(aSender && audioTrack){
+      jobs.push(aSender.replaceTrack(audioTrack).catch(()=>{}));
+    }
+  });
+  await Promise.all(jobs);
+}
+
 async function renegotiateAllCalls(){
   // PeerJS nem sempre renegocia corretamente um replaceTrack() em todos
   // os peers. Ao trocar câmera <-> tela, recriamos as MediaConnections.
@@ -2011,7 +2036,7 @@ $('shareBtn').onclick = async () => {
       // a causa mais comum do eco quando se compartilha tela com áudio.
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: q.frameRate, max: q.frameRate }, width: { ideal: q.width }, height: { ideal: q.height } },
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: true }
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: false }
       });
 
       const screenTrack = screenStream.getVideoTracks()[0];
@@ -2037,13 +2062,6 @@ $('shareBtn').onclick = async () => {
           micSource.connect(screenMicGain).connect(screenAudioDestination);
           systemSource.connect(screenSystemGain).connect(screenAudioDestination);
           screenMixedAudioStream = screenAudioDestination.stream;
-
-          // Se o navegador aceitar, pede para não reproduzir localmente o áudio
-          // capturado. Isso ajuda a evitar o eco em navegadores compatíveis.
-          const capturedTrack = screenAudioStream.getAudioTracks()[0];
-          try{
-            await capturedTrack.applyConstraints({ suppressLocalAudioPlayback: true });
-          }catch(e){}
         }catch(e){
           screenMixedAudioStream = null;
         }
@@ -2061,8 +2079,9 @@ $('shareBtn').onclick = async () => {
       broadcastCamState();
       screenTrack.onended = () => stopSharing();
 
-      // sharing=true agora faz getCurrentTracks() retornar a tela.
-      await renegotiateAllCalls();
+      // Troca as faixas na conexão existente. NÃO recria a chamada:
+      // recriar MediaConnections aqui fazia aparecer um segundo tile da mesma pessoa.
+      await switchAllOutgoingTracks();
 
       if(screenAudioStream){
         showErrorInCall('Áudio ativado. Pra evitar eco, prefira compartilhar uma aba específica (não a tela toda).', 6000);
@@ -2118,8 +2137,8 @@ async function stopSharing(){
   updateCamUI();
   broadcastCamState();
 
-  // Depois de parar, recria as conexões para todos receberem a câmera.
-  await renegotiateAllCalls();
+  // Volta câmera/microfone pela MESMA conexão, sem criar clone do participante.
+  await switchAllOutgoingTracks();
 }
 
 function showErrorInCall(msg, duration = 3000){
