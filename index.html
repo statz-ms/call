@@ -851,8 +851,8 @@ function createTile(id){
 
   const empty = document.createElement('div');
   empty.className = 'tile-empty';
-  empty.style.display = 'none';
-  empty.innerHTML = `<div class="big-av-fallback">👤</div><span>Sem vídeo</span>`;
+  empty.style.display = 'flex';
+  empty.innerHTML = `<div class="big-av-fallback">👤</div><span>Conectando…</span>`;
 
   const tag = document.createElement('div');
   tag.className = 'tile-tag';
@@ -1087,6 +1087,10 @@ function updateEmptyVisibility(entry){
     const vt = stream ? stream.getVideoTracks()[0] : null;
     show = !(vt && vt.readyState === 'live' && vt.enabled && !vt.muted);
   }
+  if(show){
+    const span = entry.empty.querySelector('span:last-child');
+    if(span) span.textContent = entry.stream ? 'Sem vídeo' : 'Conectando…';
+  }
   entry.empty.style.display = show ? 'flex' : 'none';
 }
 
@@ -1158,9 +1162,42 @@ function wireCall(call){
 function callPeer(id){
   if(id === myId || !peer || !localStream) return;
   if(peers.has(id) && peers.get(id).call) return;
+  // Evita "ligação dupla": sem isso, os dois lados discam um pro outro ao mesmo
+  // tempo assim que o canal de dados abre, o que cria duas negociações WebRTC
+  // concorrentes pro mesmo par e sobrecarrega o TURN gratuito — sintoma clássico
+  // de "alguns conectam, outros ficam presos em conectando".
+  if(myId && String(myId) > String(id)){
+    scheduleConnectWatchdog(id);
+    return;
+  }
   const streamToSend = new MediaStream(getCurrentTracks());
   const call = peer.call(id, streamToSend);
   if(call) wireCall(call);
+  scheduleConnectWatchdog(id);
+}
+
+// Se depois de um tempo a chamada com alguém não trouxe stream nenhuma
+// (nem a nossa nem a dele chegou), tenta de novo — cobre tanto ICE/TURN que
+// travou quanto o caso raro de ninguém ter discado por engano.
+const connectAttempts = new Map(); // id -> tentativas
+function scheduleConnectWatchdog(id){
+  if(id === myId) return;
+  setTimeout(() => {
+    const entry = peers.get(id);
+    const hasStream = entry && entry.stream;
+    if(hasStream) { connectAttempts.delete(id); return; }
+    const attempts = (connectAttempts.get(id) || 0) + 1;
+    connectAttempts.set(id, attempts);
+    if(entry?.call){ try{ entry.call.close(); }catch(e){} }
+    if(attempts <= 3){
+      if(entry) entry.call = null;
+      callPeer(id);
+    } else if(entry && entry.empty){
+      const span = entry.empty.querySelector('span:last-child');
+      if(span) span.textContent = 'Não consegui conectar — provavelmente firewall/rede. Tenta recarregar.';
+      entry.empty.style.display = 'flex';
+    }
+  }, 9000);
 }
 
 function sendProfile(conn){
