@@ -453,59 +453,45 @@
     .ctrl-btn{ width:44px; height:44px; }
   }
 
-</style>
 
-<style id="authStyles">
-#authGate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#0b0b0c;color:#f5f5f5;padding:20px}
-#authGate[hidden]{display:none!important}
-.auth-card{width:min(410px,94vw);background:#151517;border:1px solid #2a2a2e;border-radius:18px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.45)}
-.auth-brand{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.65;margin-bottom:10px}
-.auth-card h2{margin:0 0 8px;font-size:25px}.auth-card p{color:#a8a8ad;font-size:13px;line-height:1.5;margin:0 0 20px}
-.auth-field{margin:12px 0}.auth-field label{display:block;font-size:12px;color:#b8b8bd;margin-bottom:6px}
-.auth-field input{width:100%;box-sizing:border-box;background:#0f0f11;color:#fff;border:1px solid #303036;border-radius:10px;padding:12px}
-.auth-login{width:100%;margin-top:8px;border:0;border-radius:10px;padding:12px;background:#fff;color:#111;font-weight:700;cursor:pointer}
-.auth-login:disabled{opacity:.6;cursor:wait}.auth-error{display:none;background:#3a1717;color:#ffb6b6;border:1px solid #653030;border-radius:9px;padding:10px;font-size:12px;margin-bottom:12px}
-.auth-admin{position:fixed;right:18px;top:18px;z-index:99998;display:none}.auth-admin button{border:1px solid #333;background:#171719;color:#eee;border-radius:9px;padding:8px 11px;cursor:pointer}
-#adminPanel{position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:20px}
-#adminPanel.active{display:flex}.admin-card{width:min(720px,96vw);max-height:88vh;overflow:auto;background:#151517;border:1px solid #2b2b30;border-radius:18px;padding:22px;color:#eee}
-.admin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.admin-head h3{margin:0}
-.admin-close{background:none;border:0;color:#aaa;font-size:24px;cursor:pointer}.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.admin-grid input{background:#0f0f11;border:1px solid #303036;color:#fff;border-radius:9px;padding:10px}.admin-add{background:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
-.user-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid #28282d;font-size:13px}.user-meta{color:#aaa;font-size:11px}.user-actions{display:flex;gap:6px}.user-actions button{border:1px solid #36363b;background:#202024;color:#eee;border-radius:7px;padding:6px 8px;cursor:pointer}.user-actions .danger{color:#ffaaaa}
-@media(max-width:600px){.admin-grid{grid-template-columns:1fr}.auth-card{padding:22px}}
+  .access-panel{
+    display:none; position:absolute; bottom:92px; left:50%; transform:translateX(-50%);
+    width:min(460px,92vw); max-height:min(70vh,560px); overflow:auto;
+    background:rgba(16,16,16,.98); backdrop-filter:blur(16px);
+    border:1px solid var(--line); border-radius:16px; padding:16px; z-index:28;
+    box-shadow:0 18px 50px -14px rgba(0,0,0,.85);
+  }
+  .access-panel.active{display:block;}
+  .access-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;}
+  .access-sub{font-size:11px;line-height:1.45;color:var(--muted);}
+  .access-close{border:0;background:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;}
+  .access-toggle-row{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2);margin-bottom:12px;}
+  .access-toggle-row strong{display:block;font-size:12px;margin-bottom:3px;}
+  .switch{position:relative;width:42px;height:24px;display:block;flex:0 0 auto;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;border-radius:99px;background:#333;cursor:pointer;transition:.2s;}
+  .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#eee;transition:.2s;}
+  .switch input:checked + .slider{background:var(--accent);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+  .access-create{display:flex;gap:8px;margin-bottom:12px;}
+  .access-create input{min-width:0;flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;font:inherit;font-size:12px;}
+  .access-create button,.access-copy,.access-revoke{border:1px solid var(--line);border-radius:9px;background:var(--surface-3);color:var(--text);padding:9px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+  .access-create button:hover,.access-copy:hover{border-color:var(--accent);}
+  .access-list{display:flex;flex-direction:column;gap:8px;}
+  .access-item{padding:11px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2);}
+  .access-item-top{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+  .access-code{font:700 15px 'JetBrains Mono',monospace;letter-spacing:.06em;}
+  .access-meta{font-size:10.5px;color:var(--muted);margin-top:4px;}
+  .access-actions{display:flex;gap:6px;margin-top:8px;}
+  .access-revoke{color:#ffb4b4;}
+  .access-current{display:none;padding:11px;border:1px solid var(--accent);border-radius:11px;background:rgba(255,193,7,.06);margin-bottom:12px;}
+  .access-current.active{display:block;}
+  .access-current .access-code{font-size:18px;}
+  @media(max-width:700px){.access-panel{bottom:82px;max-height:68vh;}.access-create{flex-direction:column;}}
+
 </style>
 </head>
 <body>
-
-<div id="authGate">
-  <div class="auth-card">
-    <div class="auth-brand">SquadCall</div>
-    <h2>Acesso restrito</h2>
-    <p>Entre com uma conta autorizada para usar a chamada.</p>
-    <div class="auth-error" id="authError"></div>
-    <form id="authForm">
-      <div class="auth-field"><label for="authUser">Usuário</label><input id="authUser" autocomplete="username" required></div>
-      <div class="auth-field"><label for="authPass">Senha</label><input id="authPass" type="password" autocomplete="current-password" required></div>
-      <button class="auth-login" id="authLogin" type="submit">Entrar</button>
-    </form>
-  </div>
-</div>
-<div class="auth-admin" id="authAdmin"><button id="adminOpenBtn">⚙ Admin</button></div>
-<div id="adminPanel">
-  <div class="admin-card">
-    <div class="admin-head"><h3>Gerenciar usuários</h3><button class="admin-close" id="adminClose">×</button></div>
-    <form id="createUserForm">
-      <div class="admin-grid">
-        <input id="newUser" placeholder="Novo usuário" autocomplete="off" required>
-        <input id="newPass" placeholder="Senha" type="password" autocomplete="new-password" required>
-        <input id="newDisplay" placeholder="Nome exibido (opcional)" autocomplete="off">
-        <button class="admin-add" type="submit">+ Criar usuário</button>
-      </div>
-    </form>
-    <div id="adminError" class="auth-error" style="margin-top:12px"></div>
-    <div id="userList" style="margin-top:18px"></div>
-  </div>
-</div>
-
 
 <!-- LOBBY -->
 <div class="card" id="lobby">
@@ -542,6 +528,11 @@
     <div class="join-row">
       <input type="text" id="codeInput" class="mono" placeholder="Ex: 482" maxlength="3" inputmode="numeric" pattern="[0-9]*">
       <button class="primary-btn" id="joinBtn" style="width:auto;padding:12px 18px;">Entrar</button>
+    </div>
+    <div style="margin-top:12px;">
+      <label for="accessCodeInput">Código de acesso</label>
+      <input type="text" id="accessCodeInput" class="mono" placeholder="Ex: GALERA-7K2P" maxlength="12" autocomplete="off" spellcheck="false">
+      <div class="audio-hint">O anfitrião pode exigir um código de acesso. Sem ele, a entrada é recusada.</div>
     </div>
   </div>
 
@@ -598,6 +589,41 @@
     <div class="sync-label">Atraso do áudio: <span id="syncValue">0ms</span></div>
     <input type="range" id="syncSlider" min="0" max="400" step="10" value="0">
     <div class="sync-hint">Deixa em 0 pra voz. Só aumenta se o som da tela compartilhada chegar antes da imagem.</div>
+  </div>
+
+
+  <div class="access-panel" id="accessPanel">
+    <div class="access-head">
+      <div>
+        <div class="sync-label">🔐 Controle de acesso</div>
+        <div class="access-sub">Só funciona no navegador do anfitrião. Os códigos ficam salvos neste dispositivo.</div>
+      </div>
+      <button class="access-close" id="closeAccessPanel" type="button">×</button>
+    </div>
+
+    <div class="access-toggle-row">
+      <div>
+        <strong>Exigir código para entrar</strong>
+        <div class="access-sub">Se desligado, qualquer pessoa com o código da sala pode entrar.</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="requireAccessToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="access-create">
+      <input id="accessLabelInput" type="text" maxlength="24" placeholder="Nome/apelido (opcional)">
+      <button id="generateAccessBtn" type="button">+ Criar código</button>
+    </div>
+
+    <div class="access-current" id="accessCurrent"></div>
+    <div class="access-list" id="accessList"></div>
+
+    <div class="access-sub" style="margin-top:10px;">
+      ⚠️ Isto é uma whitelist local, sem servidor: a lista pertence ao anfitrião e a este navegador.
+      Para bloquear alguém, revogue o código dela.
+    </div>
   </div>
 
   <div class="audio-panel" id="audioPanel">
@@ -1421,6 +1447,53 @@ function applyProfileUpdate(id, name, avatar){
 
 function handleDataMessage(fromId, msg){
   if(!msg || !msg.type) return;
+
+  if(msg.type === 'access-request'){
+    if(!isHost) return;
+    const conn = dataConns.get(fromId);
+    if(!conn) return;
+    const ok = validAccessCode(msg.accessCode);
+    if(!ok){
+      conn.send({ type: 'access-denied', reason: 'Código de acesso inválido ou revogado.' });
+      setTimeout(() => { try{ conn.close(); }catch(e){} }, 150);
+      return;
+    }
+    conn.send({ type: 'access-ok' });
+    sendProfile(conn);
+    conn.send({ type: 'cam-state', camOn: camOn || sharing });
+    conn.send({ type: 'profile-request' });
+    if(!roster.includes(fromId)) roster.push(fromId);
+    dataConns.forEach((c, pid) => {
+      if(pid !== fromId && c.open) c.send({ type: 'peer-joined', id: fromId });
+    });
+    callPeer(fromId);
+    return;
+  }
+
+  if(msg.type === 'access-ok'){
+    if(!isHost){
+      const hostId = ROOM_PREFIX + roomCode;
+      showErrorInCall('Acesso autorizado ✓');
+      const conn = dataConns.get(hostId);
+      if(conn) conn.send({ type: 'hello' });
+      callPeer(hostId);
+    }
+    return;
+  }
+
+  if(msg.type === 'access-denied'){
+    showErrorInCall(msg.reason || 'Acesso recusado pelo anfitrião.');
+    try{ peer?.destroy(); }catch(e){}
+    dataConns.clear();
+    return;
+  }
+
+  if(msg.type === 'access-required'){
+    if(!isHost && msg.required && !pendingAccessCode){
+      showErrorInCall('Esta sala exige um código de acesso.');
+    }
+    return;
+  }
   if(msg.type === 'hello'){
     if(isHost){
       const conn = dataConns.get(fromId);
@@ -1484,21 +1557,39 @@ function ensureDataConn(peerId){
   if(!peer || peerId === myId || dataConns.has(peerId)) return;
   try{
     const conn = peer.connect(peerId, { reliable: true });
-    wireDataConn(conn);
+    wireDataConn(conn, { outbound: true });
   }catch(e){}
 }
 
-function wireDataConn(conn){
+function wireDataConn(conn, opts = {}){
   if(!conn) return;
   const id = conn.peer;
   if(dataConns.has(id)) return;
   dataConns.set(id, conn);
 
   conn.on('open', () => {
-    sendProfile(conn);
-    conn.send({ type: 'cam-state', camOn: camOn || sharing });
-    conn.send({ type: 'profile-request' });
-    callPeer(id);
+    if(isHost && !opts.outbound){
+      conn.send({ type: 'access-required', required: requireAccess });
+      if(!requireAccess){
+        conn.send({ type: 'access-ok' });
+        sendProfile(conn);
+        conn.send({ type: 'cam-state', camOn: camOn || sharing });
+        conn.send({ type: 'profile-request' });
+        callPeer(id);
+      }
+    }else if(opts.guestHost){
+      conn.send({
+        type: 'access-request',
+        accessCode: pendingAccessCode,
+        name: myProfile.name || 'Participante'
+      });
+      sendProfile(conn);
+    }else{
+      sendProfile(conn);
+      conn.send({ type: 'cam-state', camOn: camOn || sharing });
+      conn.send({ type: 'profile-request' });
+      callPeer(id);
+    }
     setTimeout(() => {
       if(conn.open) sendProfile(conn);
     }, 350);
@@ -1510,6 +1601,133 @@ function wireDataConn(conn){
   });
   conn.on('error', () => dataConns.delete(id));
 }
+
+
+
+function escapeHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- Whitelist local do anfitrião ----------
+const ACCESS_CODES_KEY = 'statz_access_codes_v1';
+const ACCESS_REQUIRE_KEY = 'statz_require_access_v1';
+const ACCESS_LAST_KEY = 'statz_last_access_code_v1';
+let requireAccess = false;
+let pendingAccessCode = '';
+
+function loadAccessCodes(){
+  try{
+    const raw = localStorage.getItem(ACCESS_CODES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  }catch(e){ return []; }
+}
+function saveAccessCodes(list){
+  try{ localStorage.setItem(ACCESS_CODES_KEY, JSON.stringify(list)); }catch(e){}
+}
+function loadRequireAccess(){
+  try{ return localStorage.getItem(ACCESS_REQUIRE_KEY) === '1'; }catch(e){ return false; }
+}
+function saveRequireAccess(v){
+  requireAccess = !!v;
+  try{ localStorage.setItem(ACCESS_REQUIRE_KEY, requireAccess ? '1' : '0'); }catch(e){}
+}
+function normalizeAccessCode(v){
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);
+}
+function generateAccessCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  const existing = new Set(loadAccessCodes().map(x => x.code));
+  do{
+    code = 'GALERA-' + Array.from({length:5}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  }while(existing.has(code));
+  return code;
+}
+function validAccessCode(code){
+  if(!requireAccess) return true;
+  const c = normalizeAccessCode(code);
+  return loadAccessCodes().some(x => x.active && x.code === c);
+}
+function renderAccessPanel(){
+  const listEl = $('accessList');
+  const toggle = $('requireAccessToggle');
+  if(!listEl || !toggle) return;
+  toggle.checked = requireAccess;
+  const list = loadAccessCodes();
+  listEl.innerHTML = '';
+  if(!list.length){
+    listEl.innerHTML = '<div class="access-sub" style="padding:8px 2px;">Nenhum código criado ainda.</div>';
+  }else{
+    list.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'access-item';
+      const status = item.active ? '🟢 ativo' : '🔴 revogado';
+      row.innerHTML = `
+        <div class="access-item-top">
+          <div>
+            <div class="access-code">${item.code}</div>
+            <div class="access-meta">${item.label ? escapeHtml(item.label) + ' · ' : ''}${status}</div>
+          </div>
+        </div>
+        <div class="access-actions">
+          <button class="access-copy" type="button">Copiar</button>
+          ${item.active ? '<button class="access-revoke" type="button">Revogar</button>' : ''}
+        </div>`;
+      row.querySelector('.access-copy').onclick = async () => {
+        try{ await navigator.clipboard.writeText(item.code); }catch(e){}
+        row.querySelector('.access-copy').textContent = 'Copiado ✓';
+        setTimeout(()=> row.querySelector('.access-copy').textContent='Copiar', 1200);
+      };
+      const revoke = row.querySelector('.access-revoke');
+      if(revoke) revoke.onclick = () => {
+        const updated = loadAccessCodes().map(x => x.code === item.code ? {...x, active:false} : x);
+        saveAccessCodes(updated);
+        renderAccessPanel();
+      };
+      listEl.appendChild(row);
+    });
+  }
+}
+function openAccessPanel(){
+  if(!isHost){
+    showErrorInCall('Somente o anfitrião pode abrir o controle de acesso.');
+    return;
+  }
+  renderAccessPanel();
+  $('accessPanel')?.classList.add('active');
+}
+function closeAccessPanel(){ $('accessPanel')?.classList.remove('active'); }
+function initAccessPanel(){
+  requireAccess = loadRequireAccess();
+  $('accessMenuBtn')?.addEventListener('click', () => {
+    if(window.matchMedia('(pointer: coarse)').matches){
+      $('settingsMenu')?.classList.remove('active');
+    }
+    openAccessPanel();
+  });
+  $('closeAccessPanel')?.addEventListener('click', closeAccessPanel);
+  $('requireAccessToggle')?.addEventListener('change', e => {
+    saveRequireAccess(e.target.checked);
+    renderAccessPanel();
+  });
+  $('generateAccessBtn')?.addEventListener('click', () => {
+    const code = generateAccessCode();
+    const label = $('accessLabelInput')?.value.trim().slice(0,24) || '';
+    const list = loadAccessCodes();
+    list.unshift({code, label, active:true, createdAt:Date.now()});
+    saveAccessCodes(list);
+    if($('accessLabelInput')) $('accessLabelInput').value = '';
+    const current = $('accessCurrent');
+    if(current){
+      current.innerHTML = `<div class="access-sub">Novo código — envie para a pessoa:</div><div class="access-code">${code}</div>`;
+      current.classList.add('active');
+    }
+    renderAccessPanel();
+  });
+  renderAccessPanel();
+}
+initAccessPanel();
 
 // ---------- Reentrada na última sala ----------
 const ROOM_STATE_KEY = 'statz_last_room';
@@ -1548,6 +1766,10 @@ async function reconnectToSavedRoom(){
   $('resumeBtn').disabled = true;
   $('resumeBtn').textContent = 'Reconectando…';
   $('codeInput').value = saved.code;
+  try{
+    pendingAccessCode = localStorage.getItem(ACCESS_LAST_KEY) || '';
+    if($('accessCodeInput')) $('accessCodeInput').value = pendingAccessCode;
+  }catch(e){}
 
   try{ peer?.destroy(); }catch(e){}
   peer = null;
@@ -1565,6 +1787,10 @@ $('forgetRoomBtn').onclick = () => {
   $('resumeRoom').style.display = 'none';
 };
 
+try{
+  const savedAccess = localStorage.getItem(ACCESS_LAST_KEY) || '';
+  if($('accessCodeInput')) $('accessCodeInput').value = savedAccess;
+}catch(e){}
 renderResumeRoom();
 
 async function createRoom(requestedCode = null, reconnecting = false){
@@ -1634,7 +1860,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
   });
 }
 
-async function joinRoom(code, reconnecting = false){
+async function joinRoom(code, reconnecting = false, accessCode = null){
   errorMsg.style.display = 'none';
   saveProfile();
   $('joinBtn').disabled = true;
@@ -1649,6 +1875,10 @@ async function joinRoom(code, reconnecting = false){
   }
 
   roomCode = code.trim().replace(/\D/g,'').slice(0,3);
+  pendingAccessCode = normalizeAccessCode(accessCode ?? $('accessCodeInput')?.value ?? '');
+  if(pendingAccessCode) {
+    try{ localStorage.setItem(ACCESS_LAST_KEY, pendingAccessCode); }catch(e){}
+  }
   isHost = false;
   saveRoomState(roomCode, false);
   const hostId = ROOM_PREFIX + roomCode;
@@ -1659,13 +1889,17 @@ async function joinRoom(code, reconnecting = false){
     enterCallUI();
     setMicButton();
     const conn = peer.connect(hostId, { reliable: true });
-    wireDataConn(conn);
+    wireDataConn(conn, { guestHost: true });
     conn.on('open', () => {
-      conn.send({ type: 'hello' });
+      conn.send({
+        type: 'access-request',
+        accessCode: pendingAccessCode,
+        name: myProfile.name || 'Participante'
+      });
       sendProfile(conn);
     });
     conn.on('error', () => showErrorInCall('Não achei essa sala. Confere o código com a galera.'));
-    callPeer(hostId);
+    // A chamada só começa depois de receber access-ok do anfitrião.
   });
   peer.on('connection', conn => wireDataConn(conn));
   peer.on('call', call => {
@@ -1697,7 +1931,7 @@ $('codeInput').addEventListener('input', () => {
   $('codeInput').value = $('codeInput').value.replace(/\D/g,'').slice(0,3);
 });
 
-$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim());
+$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim(), false, $('accessCodeInput').value.trim());
 
 $('micBtn').onclick = () => {
   ensureAudioCtx();
@@ -2100,111 +2334,5 @@ $('hangupBtn').onclick = () => {
 });
 </script>
 <div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5 · early access</div>
-
-<script id="authScript">
-(() => {
-  // COLOQUE A URL DO SEU BACKEND RENDER AQUI:
-  const AUTH_API = window.SQUADCALL_AUTH_API || 'https://SEU-BACKEND.onrender.com';
-  const TOKEN_KEY = 'squadcall_auth_token';
-  let authMe = null;
-
-  const $a = id => document.getElementById(id);
-  const gate = $a('authGate');
-
-  function token(){ return sessionStorage.getItem(TOKEN_KEY); }
-  function authHeaders(extra={}) {
-    const t = token();
-    return Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {}, extra);
-  }
-  function authError(msg){ const e=$a('authError'); e.textContent=msg; e.style.display='block'; }
-  function adminError(msg){ const e=$a('adminError'); e.textContent=msg; e.style.display='block'; }
-  function clearErrors(){ ['authError','adminError'].forEach(id=>{const e=$a(id); if(e)e.style.display='none';}); }
-
-  async function api(path, opts={}) {
-    const res = await fetch(AUTH_API + path, Object.assign({headers:authHeaders()}, opts));
-    let data={}; try{ data=await res.json(); }catch(e){}
-    if(!res.ok) throw new Error(data.error || 'Erro de comunicação com o servidor.');
-    return data;
-  }
-
-  async function checkAuth(){
-    if(AUTH_API.includes('SEU-BACKEND')) {
-      authError('Configure AUTH_API no index.html com a URL do backend antes de usar o login.');
-      return false;
-    }
-    const t=token();
-    if(!t){ gate.hidden=false; return false; }
-    try{
-      const data=await api('/api/auth/me');
-      authMe=data.user;
-      gate.hidden=true;
-      if(authMe.role==='admin') $a('authAdmin').style.display='block';
-      return true;
-    }catch(e){
-      sessionStorage.removeItem(TOKEN_KEY);
-      gate.hidden=false;
-      return false;
-    }
-  }
-
-  $a('authForm').addEventListener('submit', async e=>{
-    e.preventDefault(); clearErrors();
-    const btn=$a('authLogin'); btn.disabled=true; btn.textContent='Entrando…';
-    try{
-      const data=await api('/api/auth/login',{method:'POST',body:JSON.stringify({
-        username:$a('authUser').value.trim(),
-        password:$a('authPass').value
-      })});
-      sessionStorage.setItem(TOKEN_KEY,data.token);
-      authMe=data.user;
-      gate.hidden=true;
-      if(authMe.role==='admin') $a('authAdmin').style.display='block';
-      // The original app can now initialize normally.
-      window.dispatchEvent(new Event('squadcall-auth-ready'));
-    }catch(e){ authError(e.message); }
-    finally{ btn.disabled=false; btn.textContent='Entrar'; }
-  });
-
-  async function loadUsers(){
-    const data=await api('/api/admin/users');
-    const list=$a('userList');
-    list.innerHTML='';
-    data.users.forEach(u=>{
-      const row=document.createElement('div'); row.className='user-row';
-      const meta=document.createElement('div');
-      meta.innerHTML='<strong>'+escapeHtml(u.username)+'</strong><div class="user-meta">'+escapeHtml(u.display_name||'')+' · '+(u.active?'🟢 ativo':'🔴 bloqueado')+'</div>';
-      const actions=document.createElement('div'); actions.className='user-actions';
-      const toggle=document.createElement('button'); toggle.textContent=u.active?'Bloquear':'Ativar';
-      toggle.onclick=async()=>{await api('/api/admin/users/'+encodeURIComponent(u.id),{method:'PATCH',body:JSON.stringify({active:!u.active})});loadUsers();};
-      const reset=document.createElement('button'); reset.textContent='Senha';
-      reset.onclick=async()=>{const p=prompt('Nova senha para '+u.username+':'); if(p){await api('/api/admin/users/'+encodeURIComponent(u.id),{method:'PATCH',body:JSON.stringify({password:p})});alert('Senha alterada.');}};
-      const del=document.createElement('button'); del.className='danger'; del.textContent='Excluir';
-      del.onclick=async()=>{if(confirm('Excluir '+u.username+'?')){await api('/api/admin/users/'+encodeURIComponent(u.id),{method:'DELETE'});loadUsers();}};
-      actions.append(toggle,reset,del); row.append(meta,actions); list.append(row);
-    });
-  }
-  function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-
-  $a('adminOpenBtn').onclick=()=>{$a('adminPanel').classList.add('active');clearErrors();loadUsers().catch(e=>adminError(e.message));};
-  $a('adminClose').onclick=()=>{$a('adminPanel').classList.remove('active');};
-  $a('createUserForm').addEventListener('submit',async e=>{
-    e.preventDefault();clearErrors();
-    try{
-      await api('/api/admin/users',{method:'POST',body:JSON.stringify({
-        username:$a('newUser').value.trim(),
-        password:$a('newPass').value,
-        display_name:$a('newDisplay').value.trim()
-      })});
-      e.target.reset();loadUsers();
-    }catch(err){adminError(err.message);}
-  });
-
-  // Expose logout for future settings menu integration.
-  window.squadcallLogout=()=>{sessionStorage.removeItem(TOKEN_KEY);location.reload();};
-  window.squadcallAuthReady=checkAuth;
-  checkAuth();
-})();
-</script>
-
 </body>
 </html>
