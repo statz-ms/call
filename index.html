@@ -649,7 +649,7 @@ body.in-call #logoutFab{display:none!important;}
 const $ = id => document.getElementById(id);
 
 // ---------- Login / cadastro / sessão offline ----------
-const AUTH_API = window.SQUADCALL_AUTH_API || 'https://discovery-plains-convicted-honolulu.trycloudflare.com';
+const AUTH_API = window.SQUADCALL_AUTH_API || 'https://remain-herbs-lease-tolerance.trycloudflare.com';
 const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
 const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
@@ -1254,38 +1254,44 @@ function updateTileProfile(entry){
   if(!entry || !entry.tag) return;
   const p = entry.profile || {};
   const name = p.name || (entry.id && entry.id.startsWith(ROOM_PREFIX) ? 'Anfitrião' : 'Participante');
+  const letter = (name[0] || '?').toUpperCase();
   const nameEl = entry.tag.querySelector('.name');
   if(nameEl) nameEl.textContent = name;
 
-  const avEl = entry.tag.querySelector('img, .av-fallback');
-  if(p.avatar){
-    if(avEl && avEl.tagName === 'IMG'){
-      avEl.src = p.avatar;
-    } else if(avEl){
-      avEl.outerHTML = `<img src="${p.avatar}" alt="" onerror="this.outerHTML='<span class=&quot;av-fallback&quot;>${(name[0]||\'?\').toUpperCase()}</span>'">`;
-    }
-  } else {
-    const letter = (name[0] || '?').toUpperCase();
-    if(avEl && avEl.tagName === 'IMG'){
-      avEl.outerHTML = `<span class="av-fallback">${letter}</span>`;
-    } else if(avEl){
-      avEl.textContent = letter;
-    }
-  }
-
-  updateRemoteMicStatus(entry);
-
-  if(entry.empty){
-    const big = entry.empty.querySelector('.big-av, .big-av-fallback');
+  const setAvatar = (container, big=false) => {
+    if(!container) return;
+    const selector = big ? '.big-av, .big-av-fallback' : 'img, .av-fallback';
+    let current = container.querySelector(selector);
     if(p.avatar){
-      if(big && big.tagName === 'IMG') big.src = p.avatar;
-      else if(big) big.outerHTML = `<img class="big-av" src="${p.avatar}" alt="" onerror="this.outerHTML='<div class=&quot;big-av-fallback&quot;>${(name[0]||\'?\').toUpperCase()}</div>'">`;
-    } else {
-      const letter = (name[0] || '?').toUpperCase();
-      if(big && big.tagName === 'IMG') big.outerHTML = `<div class="big-av-fallback">${letter}</div>`;
-      else if(big) big.textContent = letter;
+      if(!current || current.tagName !== 'IMG'){
+        const img = document.createElement('img');
+        if(big) img.className = 'big-av';
+        img.alt = '';
+        if(current) current.replaceWith(img); else container.prepend(img);
+        current = img;
+      }
+      current.onerror = () => {
+        const fallback = document.createElement(big ? 'div' : 'span');
+        fallback.className = big ? 'big-av-fallback' : 'av-fallback';
+        fallback.textContent = letter;
+        current.replaceWith(fallback);
+      };
+      current.src = p.avatar;
+    }else{
+      if(!current || current.tagName === 'IMG'){
+        const fallback = document.createElement(big ? 'div' : 'span');
+        fallback.className = big ? 'big-av-fallback' : 'av-fallback';
+        fallback.textContent = letter;
+        if(current) current.replaceWith(fallback); else container.prepend(fallback);
+      }else{
+        current.textContent = letter;
+      }
     }
-  }
+  };
+
+  setAvatar(entry.tag, false);
+  setAvatar(entry.empty, true);
+  updateRemoteMicStatus(entry);
 }
 
 function removeTile(id){
