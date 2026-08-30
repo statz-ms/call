@@ -454,8 +454,58 @@
   }
 
 </style>
+
+<style id="authStyles">
+#authGate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#0b0b0c;color:#f5f5f5;padding:20px}
+#authGate[hidden]{display:none!important}
+.auth-card{width:min(410px,94vw);background:#151517;border:1px solid #2a2a2e;border-radius:18px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.45)}
+.auth-brand{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.65;margin-bottom:10px}
+.auth-card h2{margin:0 0 8px;font-size:25px}.auth-card p{color:#a8a8ad;font-size:13px;line-height:1.5;margin:0 0 20px}
+.auth-field{margin:12px 0}.auth-field label{display:block;font-size:12px;color:#b8b8bd;margin-bottom:6px}
+.auth-field input{width:100%;box-sizing:border-box;background:#0f0f11;color:#fff;border:1px solid #303036;border-radius:10px;padding:12px}
+.auth-login{width:100%;margin-top:8px;border:0;border-radius:10px;padding:12px;background:#fff;color:#111;font-weight:700;cursor:pointer}
+.auth-login:disabled{opacity:.6;cursor:wait}.auth-error{display:none;background:#3a1717;color:#ffb6b6;border:1px solid #653030;border-radius:9px;padding:10px;font-size:12px;margin-bottom:12px}
+.auth-admin{position:fixed;right:18px;top:18px;z-index:99998;display:none}.auth-admin button{border:1px solid #333;background:#171719;color:#eee;border-radius:9px;padding:8px 11px;cursor:pointer}
+#adminPanel{position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:20px}
+#adminPanel.active{display:flex}.admin-card{width:min(720px,96vw);max-height:88vh;overflow:auto;background:#151517;border:1px solid #2b2b30;border-radius:18px;padding:22px;color:#eee}
+.admin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.admin-head h3{margin:0}
+.admin-close{background:none;border:0;color:#aaa;font-size:24px;cursor:pointer}.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.admin-grid input{background:#0f0f11;border:1px solid #303036;color:#fff;border-radius:9px;padding:10px}.admin-add{background:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+.user-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid #28282d;font-size:13px}.user-meta{color:#aaa;font-size:11px}.user-actions{display:flex;gap:6px}.user-actions button{border:1px solid #36363b;background:#202024;color:#eee;border-radius:7px;padding:6px 8px;cursor:pointer}.user-actions .danger{color:#ffaaaa}
+@media(max-width:600px){.admin-grid{grid-template-columns:1fr}.auth-card{padding:22px}}
+</style>
 </head>
 <body>
+
+<div id="authGate">
+  <div class="auth-card">
+    <div class="auth-brand">SquadCall</div>
+    <h2>Acesso restrito</h2>
+    <p>Entre com uma conta autorizada para usar a chamada.</p>
+    <div class="auth-error" id="authError"></div>
+    <form id="authForm">
+      <div class="auth-field"><label for="authUser">Usuário</label><input id="authUser" autocomplete="username" required></div>
+      <div class="auth-field"><label for="authPass">Senha</label><input id="authPass" type="password" autocomplete="current-password" required></div>
+      <button class="auth-login" id="authLogin" type="submit">Entrar</button>
+    </form>
+  </div>
+</div>
+<div class="auth-admin" id="authAdmin"><button id="adminOpenBtn">⚙ Admin</button></div>
+<div id="adminPanel">
+  <div class="admin-card">
+    <div class="admin-head"><h3>Gerenciar usuários</h3><button class="admin-close" id="adminClose">×</button></div>
+    <form id="createUserForm">
+      <div class="admin-grid">
+        <input id="newUser" placeholder="Novo usuário" autocomplete="off" required>
+        <input id="newPass" placeholder="Senha" type="password" autocomplete="new-password" required>
+        <input id="newDisplay" placeholder="Nome exibido (opcional)" autocomplete="off">
+        <button class="admin-add" type="submit">+ Criar usuário</button>
+      </div>
+    </form>
+    <div id="adminError" class="auth-error" style="margin-top:12px"></div>
+    <div id="userList" style="margin-top:18px"></div>
+  </div>
+</div>
+
 
 <!-- LOBBY -->
 <div class="card" id="lobby">
@@ -1290,39 +1340,6 @@ function wireCall(call){
   });
 }
 
-// Recria a MediaConnection quando a fonte de vídeo/áudio muda.
-// replaceTrack() normalmente basta, mas o PeerJS pode manter a MediaStream
-// antiga em alguns cenários. Reabrir a conexão força uma nova negociação e
-// garante que TODOS os participantes recebam a tela compartilhada.
-const mediaRestarting = new Set();
-async function restartMediaCall(id){
-  if(id === myId || !peer || !localStream || mediaRestarting.has(id)) return;
-  mediaRestarting.add(id);
-
-  const entry = peers.get(id);
-  const oldCall = entry?.call || null;
-  if(oldCall){
-    try{ oldCall.close(); }catch(e){}
-    if(entry && peers.get(id) === entry) entry.call = null;
-  }
-
-  // Dá tempo para o close chegar ao outro lado antes de abrir a nova chamada.
-  await new Promise(r => setTimeout(r, 180));
-
-  try{
-    const streamToSend = new MediaStream(getCurrentTracks());
-    const call = peer.call(id, streamToSend);
-    if(call) wireCall(call);
-  }catch(e){}
-
-  setTimeout(() => mediaRestarting.delete(id), 900);
-}
-
-async function restartAllMediaCalls(){
-  const ids = Array.from(peers.keys()).filter(id => id !== myId);
-  await Promise.all(ids.map(id => restartMediaCall(id)));
-}
-
 function callPeer(id, force){
   if(id === myId || !peer || !localStream) return;
   if(peers.has(id) && peers.get(id).call) return;
@@ -1351,7 +1368,6 @@ function scheduleConnectWatchdog(id){
     if(entry && entry.stream){ connectAttempts.delete(id); return; }
     const attempts = (connectAttempts.get(id) || 0) + 1;
     connectAttempts.set(id, attempts);
-    if(mediaRestarting.has(id)) return;
     if(entry && entry.call){ try{ entry.call.close(); }catch(e){} entry.call = null; }
     if(attempts <= 4){
       callPeer(id, true); // força ligar, não importa de quem "era a vez" — evita deadlock
@@ -1787,10 +1803,6 @@ $('shareBtn').onclick = async () => {
       $('shareBtn').classList.add('active');
       $('myEmpty').style.display = 'none';
       broadcastCamState();
-
-      // Não depende apenas de replaceTrack: recria as MediaConnections para
-      // que a nova faixa de tela seja negociada e chegue também ao 2º/3º peer.
-      await restartAllMediaCalls();
       screenTrack.onended = () => stopSharing();
 
       if(screenAudioStream){
@@ -1860,9 +1872,6 @@ async function stopSharing(){
   $('shareBtn').classList.remove('active');
   updateCamUI();
   broadcastCamState();
-
-  // Garante que todos recebam novamente a câmera depois da transmissão.
-  await restartAllMediaCalls();
 }
 
 function showErrorInCall(msg, duration = 3000){
@@ -2091,5 +2100,111 @@ $('hangupBtn').onclick = () => {
 });
 </script>
 <div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5 · early access</div>
+
+<script id="authScript">
+(() => {
+  // COLOQUE A URL DO SEU BACKEND RENDER AQUI:
+  const AUTH_API = window.SQUADCALL_AUTH_API || 'https://SEU-BACKEND.onrender.com';
+  const TOKEN_KEY = 'squadcall_auth_token';
+  let authMe = null;
+
+  const $a = id => document.getElementById(id);
+  const gate = $a('authGate');
+
+  function token(){ return sessionStorage.getItem(TOKEN_KEY); }
+  function authHeaders(extra={}) {
+    const t = token();
+    return Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {}, extra);
+  }
+  function authError(msg){ const e=$a('authError'); e.textContent=msg; e.style.display='block'; }
+  function adminError(msg){ const e=$a('adminError'); e.textContent=msg; e.style.display='block'; }
+  function clearErrors(){ ['authError','adminError'].forEach(id=>{const e=$a(id); if(e)e.style.display='none';}); }
+
+  async function api(path, opts={}) {
+    const res = await fetch(AUTH_API + path, Object.assign({headers:authHeaders()}, opts));
+    let data={}; try{ data=await res.json(); }catch(e){}
+    if(!res.ok) throw new Error(data.error || 'Erro de comunicação com o servidor.');
+    return data;
+  }
+
+  async function checkAuth(){
+    if(AUTH_API.includes('SEU-BACKEND')) {
+      authError('Configure AUTH_API no index.html com a URL do backend antes de usar o login.');
+      return false;
+    }
+    const t=token();
+    if(!t){ gate.hidden=false; return false; }
+    try{
+      const data=await api('/api/auth/me');
+      authMe=data.user;
+      gate.hidden=true;
+      if(authMe.role==='admin') $a('authAdmin').style.display='block';
+      return true;
+    }catch(e){
+      sessionStorage.removeItem(TOKEN_KEY);
+      gate.hidden=false;
+      return false;
+    }
+  }
+
+  $a('authForm').addEventListener('submit', async e=>{
+    e.preventDefault(); clearErrors();
+    const btn=$a('authLogin'); btn.disabled=true; btn.textContent='Entrando…';
+    try{
+      const data=await api('/api/auth/login',{method:'POST',body:JSON.stringify({
+        username:$a('authUser').value.trim(),
+        password:$a('authPass').value
+      })});
+      sessionStorage.setItem(TOKEN_KEY,data.token);
+      authMe=data.user;
+      gate.hidden=true;
+      if(authMe.role==='admin') $a('authAdmin').style.display='block';
+      // The original app can now initialize normally.
+      window.dispatchEvent(new Event('squadcall-auth-ready'));
+    }catch(e){ authError(e.message); }
+    finally{ btn.disabled=false; btn.textContent='Entrar'; }
+  });
+
+  async function loadUsers(){
+    const data=await api('/api/admin/users');
+    const list=$a('userList');
+    list.innerHTML='';
+    data.users.forEach(u=>{
+      const row=document.createElement('div'); row.className='user-row';
+      const meta=document.createElement('div');
+      meta.innerHTML='<strong>'+escapeHtml(u.username)+'</strong><div class="user-meta">'+escapeHtml(u.display_name||'')+' · '+(u.active?'🟢 ativo':'🔴 bloqueado')+'</div>';
+      const actions=document.createElement('div'); actions.className='user-actions';
+      const toggle=document.createElement('button'); toggle.textContent=u.active?'Bloquear':'Ativar';
+      toggle.onclick=async()=>{await api('/api/admin/users/'+encodeURIComponent(u.id),{method:'PATCH',body:JSON.stringify({active:!u.active})});loadUsers();};
+      const reset=document.createElement('button'); reset.textContent='Senha';
+      reset.onclick=async()=>{const p=prompt('Nova senha para '+u.username+':'); if(p){await api('/api/admin/users/'+encodeURIComponent(u.id),{method:'PATCH',body:JSON.stringify({password:p})});alert('Senha alterada.');}};
+      const del=document.createElement('button'); del.className='danger'; del.textContent='Excluir';
+      del.onclick=async()=>{if(confirm('Excluir '+u.username+'?')){await api('/api/admin/users/'+encodeURIComponent(u.id),{method:'DELETE'});loadUsers();}};
+      actions.append(toggle,reset,del); row.append(meta,actions); list.append(row);
+    });
+  }
+  function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+  $a('adminOpenBtn').onclick=()=>{$a('adminPanel').classList.add('active');clearErrors();loadUsers().catch(e=>adminError(e.message));};
+  $a('adminClose').onclick=()=>{$a('adminPanel').classList.remove('active');};
+  $a('createUserForm').addEventListener('submit',async e=>{
+    e.preventDefault();clearErrors();
+    try{
+      await api('/api/admin/users',{method:'POST',body:JSON.stringify({
+        username:$a('newUser').value.trim(),
+        password:$a('newPass').value,
+        display_name:$a('newDisplay').value.trim()
+      })});
+      e.target.reset();loadUsers();
+    }catch(err){adminError(err.message);}
+  });
+
+  // Expose logout for future settings menu integration.
+  window.squadcallLogout=()=>{sessionStorage.removeItem(TOKEN_KEY);location.reload();};
+  window.squadcallAuthReady=checkAuth;
+  checkAuth();
+})();
+</script>
+
 </body>
 </html>
