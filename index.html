@@ -658,53 +658,6 @@ body{
 
 
 
-
-/* ---------- Download do Statz para Windows ---------- */
-.statz-download-wrap{
-  margin:-6px 0 24px;
-}
-.statz-download-btn{
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  padding:13px 16px;
-  border-radius:12px;
-  border:1px solid #a978ff;
-  background:linear-gradient(135deg,#a978ff,#8257e8);
-  color:#100b18;
-  text-decoration:none;
-  font-weight:800;
-  font-size:14px;
-  box-shadow:0 10px 26px rgba(130,87,232,.20);
-  transition:transform .12s ease, filter .15s ease, box-shadow .15s ease;
-}
-.statz-download-btn:hover{
-  filter:brightness(1.08);
-  box-shadow:0 12px 30px rgba(130,87,232,.30);
-}
-.statz-download-btn:active{
-  transform:scale(.985);
-}
-.statz-download-btn svg{
-  width:18px;
-  height:18px;
-  fill:currentColor;
-  flex:0 0 auto;
-}
-.statz-download-note{
-  margin-top:7px;
-  text-align:center;
-  color:var(--muted);
-  font-size:10.5px;
-}
-/* No aplicativo Desktop o botão não precisa aparecer. */
-html[data-squadcall-desktop="1"] .statz-download-wrap{
-  display:none;
-}
-
-
 /* ---------- Perfil obrigatório ---------- */
 .profile-required-error{
   border-color:var(--danger)!important;
@@ -757,7 +710,7 @@ body.in-call #logoutFab{display:none!important;}
 <body>
 <div id="authGate">
   <div class="auth-box">
-    <div class="auth-brand">Statz - 1.0 stable<title>Statz</title></div>
+    <div class="auth-brand">Statz</div>
     <div class="auth-sub">Acesso privado. Use sua conta para entrar.</div>
     <div class="auth-tabs"><button type="button" id="authLoginTab" class="active" onclick="authTab('login')">Entrar</button><button type="button" id="authRegisterTab" onclick="authTab('register')">Criar conta</button></div>
     <div id="authLoginPane" class="auth-pane active">
@@ -794,20 +747,6 @@ body.in-call #logoutFab{display:none!important;}
   <div class="eyebrow"><span class="dot"></span>Online</div>
   <div class="lobby-hero" aria-hidden="true">
     <img src="statz-mascot.png" alt="">
-  </div>
-
-  <div class="statz-download-wrap">
-    <a class="statz-download-btn"
-       href="https://github.com/statz-ms/call/releases"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Baixar Statz para Windows">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 4.2 10.5 3v8.2H3V4.2Zm8.5-1.35L21 1.5v9.7h-9.5V2.85ZM3 12.2h7.5V21L3 19.8v-7.6Zm8.5 0H21v10.3l-9.5-1.35V12.2Z"/>
-      </svg>
-      Baixar Statz para Windows
-    </a>
-    <div class="statz-download-note">Versão 1.0.0 · Windows 64-bit</div>
   </div>
   <div class="error" id="mediaWarning" style="display:none; margin-bottom:18px;"></div>
 
@@ -1961,21 +1900,27 @@ async function renegotiateAllCalls(){
 }
 
 
-function scheduleParticipantCleanup(id, delay = 1400){
+function scheduleParticipantCleanup(id, delay = 2200){
   setTimeout(() => {
     const entry = peers.get(id);
     const conn = dataConns.get(id);
 
     const hasOpenData = !!(conn && conn.open);
-    const hasLiveCall = !!(entry?.call && entry.call.open !== false);
+    // Se ainda existe uma MediaConnection registrada, ela está viva ou negociando.
+    // Os handlers close/error zeram entry.call quando ela realmente morre.
+    const hasLiveCall = !!entry?.call;
 
-    // If neither the data channel nor the media call came back, the peer is gone.
     if(!hasOpenData && !hasLiveCall){
       removeTile(id);
       peers.delete(id);
       dataConns.delete(id);
       connectAttempts.delete(id);
-      if(isHost) roster = roster.filter(x => x !== id);
+      clearConnectWatchdog(id);
+      if(isHost){
+        roster = roster.filter(x => x !== id);
+        hostKnownProfiles.delete(id);
+        hostKnownMicStates.delete(id);
+      }
     }
   }, delay);
 }
@@ -1997,7 +1942,7 @@ function wireCall(call){
   }
 
   resyncSenders(call);
-  call.on('stream', stream => { attachRemoteStream(entry, stream); resyncSenders(call); });
+  call.on('stream', stream => { clearConnectWatchdog(id); connectAttempts.delete(id); attachRemoteStream(entry, stream); resyncSenders(call); });
   call.on('close', () => {
     const current = peers.get(id);
     if(current?.call === call){
@@ -2035,20 +1980,26 @@ function callPeer(id, force){
   scheduleConnectWatchdog(id);
 }
 
-// Se depois de um tempo a chamada com alguém não trouxe stream nenhuma
-// (nem a nossa nem a dele chegou), tenta de novo — cobre tanto ICE/TURN que
-// travou quanto o caso do lado "certo" de ligar ter falhado silenciosamente.
+// Um único watchdog por participante. A versão anterior podia empilhar vários
+// timers para a mesma pessoa (roster + data + call), provocando rediscagens em cascata.
 const connectAttempts = new Map(); // id -> tentativas
+const connectWatchdogs = new Map(); // id -> timeout
+function clearConnectWatchdog(id){
+  const timer = connectWatchdogs.get(id);
+  if(timer) clearTimeout(timer);
+  connectWatchdogs.delete(id);
+}
 function scheduleConnectWatchdog(id){
-  if(id === myId) return;
-  setTimeout(() => {
+  if(id === myId || connectWatchdogs.has(id)) return;
+  const timer = setTimeout(() => {
+    connectWatchdogs.delete(id);
     const entry = peers.get(id);
     if(entry && entry.stream){ connectAttempts.delete(id); return; }
     const attempts = (connectAttempts.get(id) || 0) + 1;
     connectAttempts.set(id, attempts);
     if(entry && entry.call){ try{ entry.call.close(); }catch(e){} entry.call = null; }
     if(attempts <= 4){
-      callPeer(id, true); // força ligar, não importa de quem "era a vez" — evita deadlock
+      callPeer(id, true);
     } else {
       const msg = 'Não consegui conectar com alguém na sala — provavelmente firewall/rede. Tenta recarregar.';
       if(entry && entry.empty){
@@ -2060,6 +2011,7 @@ function scheduleConnectWatchdog(id){
       }
     }
   }, 6000);
+  connectWatchdogs.set(id, timer);
 }
 
 function sendProfile(conn){
@@ -2098,20 +2050,20 @@ function applyProfileUpdate(id, name, avatar){
   if(entry.tag) updateTileProfile(entry);
 }
 
-function handleDataMessage(fromId, msg){
+function handleDataMessage(fromId, msg, sourceConn = null){
   if(!msg || !msg.type) return;
   if(msg.type === 'hello'){
     if(isHost){
-      const conn = dataConns.get(fromId);
+      const conn = (sourceConn && sourceConn.open) ? sourceConn : dataConns.get(fromId);
       if(conn){
         conn.send({ type: 'roster', peers: roster.slice() });
         // manda de uma vez todos os perfis que o anfitrião já conhece, pra
         // quem chegou não depender de abrir conexão direta com cada um
         hostKnownProfiles.forEach((p, pid) => {
-          conn.send({ type: 'profile-relay', id: pid, name: p.name, avatar: p.avatar });
+          if(roster.includes(pid)) conn.send({ type: 'profile-relay', id: pid, name: p.name, avatar: p.avatar });
         });
         hostKnownMicStates.forEach((state, pid) => {
-          conn.send({ type:'mic-state-relay', id:pid, micOn:!!state });
+          if(roster.includes(pid)) conn.send({ type:'mic-state-relay', id:pid, micOn:!!state });
         });
         sendProfile(conn);
         conn.send({ type: 'profile-request' });
@@ -2184,13 +2136,35 @@ function handleDataMessage(fromId, msg){
       updateRemoteMicStatus(entry);
     }
   } else if(msg.type === 'profile-request'){
-    const conn = dataConns.get(fromId);
+    const conn = (sourceConn && sourceConn.open) ? sourceConn : dataConns.get(fromId);
     if(conn) sendProfile(conn);
   }
 }
 
-function ensureDataConn(peerId){
-  if(!peer || peerId === myId || dataConns.has(peerId)) return;
+function shouldInitiateDataConn(peerId){
+  // Entre dois peers já conhecidos, só um lado inicia a conexão. Isso evita A→B e B→A
+  // simultâneos. A conexão inicial convidado→host continua sendo aberta explicitamente.
+  if(!myId || !peerId) return true;
+  return String(myId) < String(peerId);
+}
+
+function ensureDataConn(peerId, force = false){
+  if(!peer || peerId === myId) return;
+  const existing = dataConns.get(peerId);
+  const age = existing?.__statzCreatedAt ? (Date.now() - existing.__statzCreatedAt) : 0;
+
+  if(existing?.open) return;
+  // Dá uma janela real para a conexão que já está negociando abrir. Antes, qualquer
+  // chamada recebida podia criar uma segunda DataConnection cruzada imediatamente.
+  if(existing && !existing.__statzClosed && age < 3500) return;
+  if(!force && !shouldInitiateDataConn(peerId)) return;
+
+  if(existing && !existing.open){
+    existing.__statzClosed = true;
+    try{ existing.close(); }catch(e){}
+    if(dataConns.get(peerId) === existing) dataConns.delete(peerId);
+  }
+
   try{
     const conn = peer.connect(peerId, { reliable: true });
     wireDataConn(conn);
@@ -2200,29 +2174,81 @@ function ensureDataConn(peerId){
 function wireDataConn(conn){
   if(!conn) return;
   const id = conn.peer;
-  if(dataConns.has(id)) return;
-  dataConns.set(id, conn);
+  conn.__statzCreatedAt = Date.now();
+  conn.__statzClosed = false;
+
+  const previous = dataConns.get(id);
+  // Mantém uma conexão aberta como canônica. Se a atual só está negociando, preserva
+  // a mais antiga por alguns segundos em vez de criar uma corrida de conexões.
+  if(!previous || !previous.open && (Date.now() - (previous.__statzCreatedAt || 0) >= 3500)){
+    dataConns.set(id, conn);
+  } else if(!previous){
+    dataConns.set(id, conn);
+  }
+  if(!dataConns.has(id)) dataConns.set(id, conn);
 
   conn.on('open', () => {
+    conn.__statzClosed = false;
+    const current = dataConns.get(id);
+    if(!current || !current.open){
+      if(current && current !== conn){ try{ current.close(); }catch(e){} }
+      dataConns.set(id, conn);
+    }
+
     sendProfile(conn);
-    conn.send({ type: 'cam-state', camOn: camOn || sharing });
-    conn.send({ type: 'mic-state', micOn: !!micOn });
-    conn.send({ type: 'profile-request' });
+    try{ conn.send({ type: 'cam-state', camOn: camOn || sharing }); }catch(e){}
+    try{ conn.send({ type: 'mic-state', micOn: !!micOn }); }catch(e){}
+    try{ conn.send({ type: 'profile-request' }); }catch(e){}
+
+    // Toda conexão/reconexão do convidado com o host refaz o handshake. Na versão
+    // anterior, "hello" só era enviado pela PRIMEIRA conexão criada em joinRoom;
+    // se ela fosse substituída durante uma corrida, o host nunca recebia o roster handshake.
+    if(!isHost && String(id).startsWith(ROOM_PREFIX)){
+      try{ conn.send({ type: 'hello' }); }catch(e){}
+    }
+
     callPeer(id);
-    [350, 1200, 3000].forEach(delay => setTimeout(() => {
-      if(conn.open) sendProfile(conn);
+
+    [250, 800, 1800, 3500].forEach(delay => setTimeout(() => {
+      if(conn.open){
+        sendProfile(conn);
+        try{ conn.send({ type: 'profile-request' }); }catch(e){}
+        if(!isHost && String(id).startsWith(ROOM_PREFIX)){
+          try{ conn.send({ type: 'hello' }); }catch(e){}
+        }
+      }
     }, delay));
   });
-  conn.on('data', msg => handleDataMessage(id, msg));
-  conn.on('close', () => {
-    if(dataConns.get(id) === conn) dataConns.delete(id);
-    if(isHost) roster = roster.filter(x => x !== id);
+
+  conn.on('data', msg => handleDataMessage(id, msg, conn));
+
+  const onGone = () => {
+    conn.__statzClosed = true;
+    const wasCanonical = dataConns.get(id) === conn;
+    if(wasCanonical){
+      dataConns.delete(id);
+      // Não remove do roster aqui: mídia pode continuar viva e o canal pode reconectar.
+      setTimeout(() => {
+        const entry = peers.get(id);
+        if(peer && (entry?.call || entry?.stream || (isHost && roster.includes(id)))){
+          ensureDataConn(id);
+        }
+      }, 650);
+    }
     scheduleParticipantCleanup(id);
-  });
-  conn.on('error', () => {
-    if(dataConns.get(id) === conn) dataConns.delete(id);
-    scheduleParticipantCleanup(id);
-  });
+  };
+
+  conn.on('close', onGone);
+  conn.on('error', onGone);
+}
+
+function resetConnectionRuntime(){
+  roster = [];
+  hostKnownProfiles.clear();
+  hostKnownMicStates.clear();
+  connectAttempts.clear();
+  connectWatchdogs.forEach(timer => clearTimeout(timer));
+  connectWatchdogs.clear();
 }
 
 // ---------- Reentrada na última sala ----------
@@ -2270,6 +2296,7 @@ async function reconnectToSavedRoom(){
   myId = null;
   peers.clear();
   dataConns.clear();
+  resetConnectionRuntime();
 
   if(saved.host) await createRoom(saved.code, true);
   else await joinRoom(saved.code, true);
@@ -2298,6 +2325,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
     return;
   }
 
+  if(!reconnecting) resetConnectionRuntime();
   roomCode = requestedCode || genCode();
   isHost = true;
   peer = new Peer(ROOM_PREFIX + roomCode, { config: ICE_CONFIG });
@@ -2368,6 +2396,11 @@ async function createRoom(requestedCode = null, reconnecting = false){
 async function joinRoom(code, reconnecting = false){
   errorMsg.style.display = 'none';
   if(!validateRequiredProfile()) return;
+  const cleanCode = String(code || '').trim().replace(/\D/g,'').slice(0,3);
+  if(cleanCode.length !== 3){
+    showError('Digite o código de 3 números da sala.');
+    return;
+  }
   if(!reconnecting) reconnectAttempts = 0;
   $('joinBtn').disabled = true;
   $('joinBtn').textContent = 'Entrando…';
@@ -2380,9 +2413,9 @@ async function joinRoom(code, reconnecting = false){
     return;
   }
 
-  roomCode = code.trim().replace(/\D/g,'').slice(0,3);
+  if(!reconnecting) resetConnectionRuntime();
+  roomCode = cleanCode;
   isHost = false;
-  saveRoomState(roomCode, false);
   const hostId = ROOM_PREFIX + roomCode;
   peer = new Peer(undefined, { config: ICE_CONFIG });
 
@@ -2395,10 +2428,7 @@ async function joinRoom(code, reconnecting = false){
     setMicButton();
     const conn = peer.connect(hostId, { reliable: true });
     wireDataConn(conn);
-    conn.on('open', () => {
-      conn.send({ type: 'hello' });
-      sendProfile(conn);
-    });
+    conn.on('open', () => saveRoomState(roomCode, false));
     conn.on('error', () => showErrorInCall('Não achei essa sala. Confere o código com a galera.'));
     callPeer(hostId);
   });
@@ -3097,7 +3127,7 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">V1.0.0 · stable</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.0 · stable</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
@@ -3108,12 +3138,50 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.documentElement.dataset.squadcallDesktop = '1';
       const info = await window.__TAURI__.core.invoke('desktop_info');
       console.log('[SquadCall Desktop]', info);
+      const versionMatch = String(info || '').match(/Desktop\s+([^\s]+)/i);
+      const badge = document.getElementById('appVersion');
+      if(badge && versionMatch) badge.textContent = 'v' + versionMatch[1] + ' · stable';
       setTimeout(() => refreshNativeAudioApps?.(), 500);
     }
   } catch (e) {
     console.warn('[SquadCall Desktop] bridge indisponível:', e);
   }
 });
+</script>
+
+
+<script>
+/* ---------- Statz Desktop Auto Update ----------
+   Só roda dentro do Tauri. No navegador/GitHub Pages não faz nada. */
+(async function statzAutoUpdater(){
+  if(!window.__TAURI__?.core?.invoke) return;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  await sleep(1800);
+  try{
+    const updater = window.__TAURI__?.updater;
+    if(!updater?.check) return;
+    const update = await updater.check();
+    if(!update) return;
+
+    const ok = confirm(
+      'Nova versão do Statz disponível: ' + update.version + '\n\n' +
+      (update.body || 'Correções e melhorias.') + '\n\n' +
+      'Atualizar agora?'
+    );
+    if(!ok){ try{ await update.close(); }catch(e){} return; }
+
+    const badge = document.getElementById('appVersion');
+    if(badge) badge.textContent = 'Baixando atualização…';
+
+    await update.downloadAndInstall((event) => {
+      if(!badge) return;
+      if(event.event === 'Started') badge.textContent = 'Baixando atualização…';
+      else if(event.event === 'Finished') badge.textContent = 'Instalando atualização…';
+    });
+  }catch(e){
+    console.warn('[Statz Updater]', e);
+  }
+})();
 </script>
 
 </body>
