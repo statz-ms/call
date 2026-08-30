@@ -1290,6 +1290,39 @@ function wireCall(call){
   });
 }
 
+// Recria a MediaConnection quando a fonte de vídeo/áudio muda.
+// replaceTrack() normalmente basta, mas o PeerJS pode manter a MediaStream
+// antiga em alguns cenários. Reabrir a conexão força uma nova negociação e
+// garante que TODOS os participantes recebam a tela compartilhada.
+const mediaRestarting = new Set();
+async function restartMediaCall(id){
+  if(id === myId || !peer || !localStream || mediaRestarting.has(id)) return;
+  mediaRestarting.add(id);
+
+  const entry = peers.get(id);
+  const oldCall = entry?.call || null;
+  if(oldCall){
+    try{ oldCall.close(); }catch(e){}
+    if(entry && peers.get(id) === entry) entry.call = null;
+  }
+
+  // Dá tempo para o close chegar ao outro lado antes de abrir a nova chamada.
+  await new Promise(r => setTimeout(r, 180));
+
+  try{
+    const streamToSend = new MediaStream(getCurrentTracks());
+    const call = peer.call(id, streamToSend);
+    if(call) wireCall(call);
+  }catch(e){}
+
+  setTimeout(() => mediaRestarting.delete(id), 900);
+}
+
+async function restartAllMediaCalls(){
+  const ids = Array.from(peers.keys()).filter(id => id !== myId);
+  await Promise.all(ids.map(id => restartMediaCall(id)));
+}
+
 function callPeer(id, force){
   if(id === myId || !peer || !localStream) return;
   if(peers.has(id) && peers.get(id).call) return;
@@ -1318,6 +1351,7 @@ function scheduleConnectWatchdog(id){
     if(entry && entry.stream){ connectAttempts.delete(id); return; }
     const attempts = (connectAttempts.get(id) || 0) + 1;
     connectAttempts.set(id, attempts);
+    if(mediaRestarting.has(id)) return;
     if(entry && entry.call){ try{ entry.call.close(); }catch(e){} entry.call = null; }
     if(attempts <= 4){
       callPeer(id, true); // força ligar, não importa de quem "era a vez" — evita deadlock
@@ -1753,6 +1787,10 @@ $('shareBtn').onclick = async () => {
       $('shareBtn').classList.add('active');
       $('myEmpty').style.display = 'none';
       broadcastCamState();
+
+      // Não depende apenas de replaceTrack: recria as MediaConnections para
+      // que a nova faixa de tela seja negociada e chegue também ao 2º/3º peer.
+      await restartAllMediaCalls();
       screenTrack.onended = () => stopSharing();
 
       if(screenAudioStream){
@@ -1822,6 +1860,9 @@ async function stopSharing(){
   $('shareBtn').classList.remove('active');
   updateCamUI();
   broadcastCamState();
+
+  // Garante que todos recebam novamente a câmera depois da transmissão.
+  await restartAllMediaCalls();
 }
 
 function showErrorInCall(msg, duration = 3000){
