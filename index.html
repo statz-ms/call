@@ -1303,6 +1303,25 @@ function broadcastCamState(){
   dataConns.forEach(c => { if(c.open) c.send({ type: 'cam-state', camOn: state }); });
 }
 
+// O anfitrião guarda o perfil de cada convidado que já apareceu, pra poder
+// retransmitir pra todo mundo — a conexão de dados DIRETA entre dois
+// convidados (sem passar pelo anfitrião) é a que mais falha em redes difíceis,
+// então o nome não pode depender só dela.
+const hostKnownProfiles = new Map(); // id -> {name, avatar}
+
+function applyProfileUpdate(id, name, avatar){
+  let entry = peers.get(id);
+  if(!entry){
+    entry = { id, profile: null, remoteCamOn: true };
+    peers.set(id, entry);
+  }
+  entry.profile = {
+    name: (name || 'Participante').slice(0,20),
+    avatar: avatar || null
+  };
+  if(entry.tag) updateTileProfile(entry);
+}
+
 function handleDataMessage(fromId, msg){
   if(!msg || !msg.type) return;
   if(msg.type === 'hello'){
@@ -1310,6 +1329,11 @@ function handleDataMessage(fromId, msg){
       const conn = dataConns.get(fromId);
       if(conn){
         conn.send({ type: 'roster', peers: roster.slice() });
+        // manda de uma vez todos os perfis que o anfitrião já conhece, pra
+        // quem chegou não depender de abrir conexão direta com cada um
+        hostKnownProfiles.forEach((p, pid) => {
+          conn.send({ type: 'profile-relay', id: pid, name: p.name, avatar: p.avatar });
+        });
         sendProfile(conn);
         conn.send({ type: 'profile-request' });
         conn.send({ type: 'cam-state', camOn: camOn || sharing });
@@ -1334,16 +1358,17 @@ function handleDataMessage(fromId, msg){
       callPeer(msg.id);
     }
   } else if(msg.type === 'profile'){
-    let entry = peers.get(fromId);
-    if(!entry){
-      entry = { id: fromId, profile: null, remoteCamOn: true };
-      peers.set(fromId, entry);
+    applyProfileUpdate(fromId, msg.name, msg.avatar);
+    if(isHost){
+      // guarda e retransmite pra quem mais já tá conectado, mesmo que essas
+      // pessoas nunca cheguem a abrir uma conexão direta com fromId
+      hostKnownProfiles.set(fromId, { name: msg.name, avatar: msg.avatar || null });
+      dataConns.forEach((c, pid) => {
+        if(pid !== fromId && c.open) c.send({ type: 'profile-relay', id: fromId, name: msg.name, avatar: msg.avatar || null });
+      });
     }
-    entry.profile = {
-      name: (msg.name || 'Participante').slice(0,20),
-      avatar: msg.avatar || null
-    };
-    if(entry.tag) updateTileProfile(entry);
+  } else if(msg.type === 'profile-relay'){
+    if(msg.id && msg.id !== myId) applyProfileUpdate(msg.id, msg.name, msg.avatar);
   } else if(msg.type === 'cam-state'){
     let entry = peers.get(fromId);
     if(!entry){
@@ -1980,6 +2005,6 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v3</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v4</div>
 </body>
 </html>
