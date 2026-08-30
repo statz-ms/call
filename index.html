@@ -806,10 +806,24 @@ async function getLocalStream(){
     autoGainControl: true
   };
   if(selectedInputDeviceId) audioConstraints.deviceId = { exact: selectedInputDeviceId };
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: audioConstraints
-  });
+  let noCameraDevice = false;
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: audioConstraints
+    });
+  }catch(e){
+    // Pedir câmera+mic juntos falha inteiro se o PC não tiver webcam — tenta
+    // de novo só com áudio antes de desistir, já que dá pra usar o app assim
+    // (voz + compartilhar tela) mesmo sem câmera nenhuma.
+    if(e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError' || e.name === 'OverconstrainedError'){
+      localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
+      noCameraDevice = true;
+    } else {
+      throw e;
+    }
+  }
+  window.noCameraDevice = noCameraDevice;
   const activeAudio = localStream.getAudioTracks()[0];
   if(activeAudio) selectedInputDeviceId = activeAudio.getSettings?.().deviceId || selectedInputDeviceId;
   cameraTrack = localStream.getVideoTracks()[0];
@@ -1556,6 +1570,10 @@ $('micBtn').oncontextmenu = (e) => {
 };
 
 $('camBtn').onclick = () => {
+  if(window.noCameraDevice){
+    showErrorInCall('Esse aparelho não tem câmera detectada — dá pra usar só com voz e compartilhar tela.');
+    return;
+  }
   camOn = !camOn;
   if(localStream) localStream.getVideoTracks().forEach(t => t.enabled = camOn);
   updateCamUI();
@@ -1944,6 +1962,6 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v2</div>
 </body>
 </html>
