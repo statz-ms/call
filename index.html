@@ -469,6 +469,170 @@
 .native-audio-meter>i{display:block;height:100%;width:0%;background:var(--ok);transition:width .08s linear}
 .native-audio-debug-meta{margin-top:8px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
 
+
+
+/* =========================================================
+   SQUADCALL — PURPLE THEME
+   SOMENTE VISUAL. Nenhuma lógica/WebRTC/áudio/auth alterada.
+   ========================================================= */
+:root{
+  --bg:#0c0912;
+  --surface:#14101d;
+  --surface-2:#1c1628;
+  --surface-3:#251d34;
+  --border:#332844;
+  --text:#f3effa;
+  --muted:#9d92ad;
+
+  --accent:#9b6cff;
+  --accent-dim:#6546a6;
+  --ok:#a879ff;
+  --danger:#e45f78;
+}
+
+/* Fundo e cartões */
+body{
+  background:
+    radial-gradient(circle at 50% -15%, rgba(155,108,255,.14), transparent 36%),
+    var(--bg);
+}
+.card,
+.auth-box,
+.admin-box{
+  box-shadow:0 30px 70px -24px rgba(0,0,0,.82);
+}
+
+/* Estados e controles principais */
+.tab.active,
+.primary-btn,
+.auth-submit{
+  background:linear-gradient(135deg,#a978ff,#8257e8);
+  border-color:#a978ff;
+  color:#100b18;
+}
+.tab.active:hover,
+.primary-btn:hover,
+.auth-submit:hover{
+  filter:brightness(1.08);
+}
+
+.ctrl-btn.active{
+  background:linear-gradient(135deg,#a978ff,#8257e8);
+  border-color:#a978ff;
+  color:#100b18;
+}
+
+.avatar-btn:hover,
+.copy-btn:hover,
+.expand-btn:hover,
+.ctrl-btn:hover,
+.vol-btn:hover,
+.vol-mute-btn:hover,
+.settings-fab:hover,
+.settings-fab.active,
+#logoutFab:hover{
+  border-color:#a978ff;
+  color:#c6a8ff;
+}
+
+/* Sala / código / pequenos destaques */
+.cartridge{
+  border-color:#6546a6;
+  background:linear-gradient(135deg,rgba(155,108,255,.08),rgba(102,70,166,.04));
+}
+.cartridge .code,
+.sync-label span,
+.vol-panel-label .vol-value,
+.native-audio-status.active,
+.admin-key{
+  color:#b995ff;
+}
+
+/* Sliders e opções */
+.sync-panel input[type=range],
+.vol-panel input[type=range]{
+  accent-color:#9b6cff;
+}
+.quality-opt.active{
+  border-color:#9b6cff;
+  color:#b995ff;
+  background:rgba(155,108,255,.10);
+}
+.quality-opt.active span{color:#b995ff}
+
+/* Aura de quem está falando */
+@keyframes speakingGlow{
+  0%,100%{
+    box-shadow:0 0 0 3px #9b6cff,0 0 16px 4px rgba(155,108,255,.48);
+  }
+  50%{
+    box-shadow:0 0 0 3px #b58aff,0 0 28px 9px rgba(155,108,255,.78);
+  }
+}
+
+/* Auth */
+#authGate{
+  background:
+    radial-gradient(circle at 50% 0%,rgba(155,108,255,.14),transparent 44%),
+    #0a0710;
+}
+.auth-box{
+  background:#15101e;
+  border-color:#352746;
+}
+.auth-tabs{background:#20182c}
+.auth-tabs button.active{
+  background:linear-gradient(135deg,#a978ff,#8257e8);
+  color:#100b18;
+}
+.auth-input{
+  background:#21192d;
+  border-color:#3a2c4e;
+}
+.auth-input:focus{
+  outline-color:#9b6cff;
+}
+.auth-note{color:#8f849f}
+
+/* Painel admin */
+.admin-box{
+  background:#120e1a;
+  border-color:#352746;
+}
+.admin-section{
+  background:#1b1425;
+  border-color:#352746;
+}
+.admin-create input{
+  background:#21192d;
+  border-color:#3a2c4e;
+}
+.admin-btn{
+  background:#241b31;
+  border-color:#403052;
+}
+.admin-btn.primary{
+  color:#c7adff;
+  border-color:#7855b5;
+}
+
+/* Painel nativo / menus flutuantes */
+.native-audio-debug,
+.sync-panel,
+.vol-panel,
+.settings-menu{
+  border-color:#372a49;
+}
+.native-audio-meter{
+  background:#2b2238;
+}
+.native-audio-meter>i{
+  background:linear-gradient(90deg,#764ee0,#b68cff);
+}
+
+/* Mantém vermelho/verde semântico para erro, sair e status administrativos.
+   A identidade principal fica roxa, mas feedback crítico continua fácil de ler. */
+
 </style>
 <style>
 #authGate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 0%,rgba(192,192,192,.08),transparent 45%),#090909}
