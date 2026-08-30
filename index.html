@@ -658,6 +658,53 @@ body{
 
 
 
+
+/* ---------- Download do Statz para Windows ---------- */
+.statz-download-wrap{
+  margin:-6px 0 24px;
+}
+.statz-download-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:13px 16px;
+  border-radius:12px;
+  border:1px solid #a978ff;
+  background:linear-gradient(135deg,#a978ff,#8257e8);
+  color:#100b18;
+  text-decoration:none;
+  font-weight:800;
+  font-size:14px;
+  box-shadow:0 10px 26px rgba(130,87,232,.20);
+  transition:transform .12s ease, filter .15s ease, box-shadow .15s ease;
+}
+.statz-download-btn:hover{
+  filter:brightness(1.08);
+  box-shadow:0 12px 30px rgba(130,87,232,.30);
+}
+.statz-download-btn:active{
+  transform:scale(.985);
+}
+.statz-download-btn svg{
+  width:18px;
+  height:18px;
+  fill:currentColor;
+  flex:0 0 auto;
+}
+.statz-download-note{
+  margin-top:7px;
+  text-align:center;
+  color:var(--muted);
+  font-size:10.5px;
+}
+/* No aplicativo Desktop o botão não precisa aparecer. */
+html[data-squadcall-desktop="1"] .statz-download-wrap{
+  display:none;
+}
+
+
 /* ---------- Perfil obrigatório ---------- */
 .profile-required-error{
   border-color:var(--danger)!important;
@@ -747,6 +794,20 @@ body.in-call #logoutFab{display:none!important;}
   <div class="eyebrow"><span class="dot"></span>Online</div>
   <div class="lobby-hero" aria-hidden="true">
     <img src="statz-mascot.png" alt="">
+  </div>
+
+  <div class="statz-download-wrap">
+    <a class="statz-download-btn"
+       href="https://www.mediafire.com/file/btad07l4rp6iz6e/Statz_1.0.0_x64-setup.exe/file"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Baixar Statz para Windows">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 4.2 10.5 3v8.2H3V4.2Zm8.5-1.35L21 1.5v9.7h-9.5V2.85ZM3 12.2h7.5V21L3 19.8v-7.6Zm8.5 0H21v10.3l-9.5-1.35V12.2Z"/>
+      </svg>
+      Baixar Statz para Windows
+    </a>
+    <div class="statz-download-note">Versão 1.0.0 · Windows 64-bit</div>
   </div>
   <div class="error" id="mediaWarning" style="display:none; margin-bottom:18px;"></div>
 
