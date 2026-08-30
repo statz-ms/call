@@ -1148,13 +1148,13 @@ $('avatarInput').addEventListener('change', () => {
 loadProfile();
 
 const QUALITY_PRESETS = {
-  full60:{ width:1920, height:1080, frameRate:60, maxBitrate:8000000, label:'1080p60' },
-  full30:{ width:1920, height:1080, frameRate:30, maxBitrate:5000000, label:'1080p30' },
-  alta:  { width:1280, height:720,  frameRate:60, maxBitrate:3000000, label:'720p60' },
-  media: { width:1280, height:720,  frameRate:30, maxBitrate:1800000, label:'720p30' },
-  baixa: { width:854,  height:480,  frameRate:24, maxBitrate:900000,  label:'480p24' }
+  full60:{ width:1920, height:1080, frameRate:60, maxBitrate:12000000, label:'1080p60' },
+  full30:{ width:1920, height:1080, frameRate:30, maxBitrate:8000000,  label:'1080p30' },
+  alta:  { width:1280, height:720,  frameRate:60, maxBitrate:6000000,  label:'720p60' },
+  media: { width:1280, height:720,  frameRate:30, maxBitrate:4000000,  label:'720p30' },
+  baixa: { width:854,  height:480,  frameRate:24, maxBitrate:1500000,  label:'480p24' }
 };
-let currentQuality = 'media';
+let currentQuality = 'full30';
 
 let peer = null;
 let myId = null;
@@ -2718,7 +2718,7 @@ async function applyQuality(sender){
       enc.maxFramerate = q.frameRate;
       enc.maxBitrate = q.maxBitrate;
     });
-    params.degradationPreference = 'maintain-framerate';
+    params.degradationPreference = 'maintain-resolution';
     await sender.setParameters(params);
   }catch(e){}
 }
@@ -3013,6 +3013,10 @@ async function startNativeAppAudio(pid){
     return;
   }
 
+  // Guarda a escolha ANTES do stop, porque stopNativeAppAudio() limpa o <select>.
+  // Sem isso, ao escolher chrome.exe/jogo o seletor voltava visualmente para
+  // "Desativado", mesmo durante a tentativa de ativar a captura.
+  const requestedPid = String(pid);
   await stopNativeAppAudio({silent:true});
   const ok = await ensureNativeAudioProcessor();
   if(!ok){
@@ -3061,10 +3065,16 @@ async function startNativeAppAudio(pid){
     });
     nativeAppAudioPid = Number(pid);
     nativeAppAudioActive = true;
+
+    // Restaura visualmente o app escolhido depois que stopNativeAppAudio()
+    // limpou o seletor.
+    const processSelect = $('nativeAppAudioProcess');
+    if(processSelect) processSelect.value = requestedPid;
+
     rebuildNativeAppMix();
     await switchAllOutgoingTracks();
 
-    const opt = $('nativeAppAudioProcess')?.selectedOptions?.[0];
+    const opt = processSelect?.selectedOptions?.[0];
     const label = opt?.textContent?.replace(/\s—\sPID.*$/,'') || `PID ${pid}`;
     setNativeAudioStatus(
       `${label}: áudio isolado ATIVO (${format.sampleRate/1000} kHz). Ao compartilhar tela, o áudio geral do PC será ignorado.`,
@@ -3253,7 +3263,7 @@ $('hangupBtn').onclick = async () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.2 · stable candidate</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.5 · stable candidate</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
@@ -3276,39 +3286,105 @@ window.addEventListener('DOMContentLoaded', async () => {
 </script>
 
 
-<script>
-/* ---------- Statz Desktop Auto Update ----------
-   Só roda dentro do Tauri. No navegador/GitHub Pages não faz nada. */
-(async function statzAutoUpdater(){
-  if(!window.__TAURI__?.core?.invoke) return;
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  await sleep(1800);
-  try{
-    const updater = window.__TAURI__?.updater;
-    if(!updater?.check) return;
-    const update = await updater.check();
-    if(!update) return;
 
-    const ok = confirm(
-      'Nova versão do Statz disponível: ' + update.version + '\n\n' +
-      (update.body || 'Correções e melhorias.') + '\n\n' +
-      'Atualizar agora?'
-    );
-    if(!ok){ try{ await update.close(); }catch(e){} return; }
 
-    const badge = document.getElementById('appVersion');
-    if(badge) badge.textContent = 'Baixando atualização…';
 
-    await update.downloadAndInstall((event) => {
-      if(!badge) return;
-      if(event.event === 'Started') badge.textContent = 'Baixando atualização…';
-      else if(event.event === 'Finished') badge.textContent = 'Instalando atualização…';
-    });
-  }catch(e){
-    console.warn('[Statz Updater]', e);
+<!-- Statz Windows download — web only -->
+<a
+  id="statzWindowsDownload"
+  class="statz-windows-download"
+  href="https://www.mediafire.com/file/btad07l4rp6iz6e/Statz_1.0.0_x64-setup.exe/file"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="Baixar Statz para Windows"
+>
+  <span class="statz-windows-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="19" height="19">
+      <path fill="currentColor" d="M3 5.1 10.3 4v7H3V5.1Zm8.2-1.2L21 2.5V11h-9.8V3.9ZM3 12h7.3v7L3 17.9V12Zm8.2 0H21v8.5l-9.8-1.4V12Z"/>
+    </svg>
+  </span>
+  <span class="statz-windows-copy">
+    <strong>Baixar para Windows</strong>
+    <small>Aplicativo desktop</small>
+  </span>
+  <span class="statz-windows-arrow" aria-hidden="true">↓</span>
+</a>
+
+<style>
+.statz-windows-download{
+  position:fixed;
+  left:18px;
+  bottom:18px;
+  z-index:99990;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:210px;
+  padding:10px 12px;
+  border:1px solid rgba(167,111,255,.32);
+  border-radius:13px;
+  background:linear-gradient(135deg,rgba(28,23,38,.96),rgba(18,16,24,.96));
+  box-shadow:0 10px 28px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.035);
+  color:#f4efff;
+  text-decoration:none;
+  font-family:inherit;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.statz-windows-download:hover{
+  transform:translateY(-2px);
+  border-color:rgba(177,122,255,.7);
+  background:linear-gradient(135deg,rgba(42,30,61,.98),rgba(23,19,32,.98));
+  box-shadow:0 14px 34px rgba(0,0,0,.36),0 0 22px rgba(139,83,255,.10);
+}
+.statz-windows-icon{
+  width:36px;
+  height:36px;
+  flex:0 0 36px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  color:#b77cff;
+  background:rgba(151,91,255,.11);
+  border:1px solid rgba(173,112,255,.16);
+}
+.statz-windows-copy{
+  display:flex;
+  flex-direction:column;
+  line-height:1.18;
+  flex:1;
+}
+.statz-windows-copy strong{
+  font-size:12px;
+  font-weight:750;
+  letter-spacing:.01em;
+}
+.statz-windows-copy small{
+  margin-top:3px;
+  color:#918b9c;
+  font-size:10px;
+}
+.statz-windows-arrow{
+  color:#a76fff;
+  font-size:17px;
+  padding:0 3px;
+}
+html[data-squadcall-desktop="1"] .statz-windows-download,
+html[data-statz-desktop="1"] .statz-windows-download{
+  display:none !important;
+}
+@media(max-width:640px){
+  .statz-windows-download{
+    left:10px;
+    bottom:10px;
+    min-width:0;
+    padding:9px 10px;
   }
-})();
-</script>
+  .statz-windows-copy small{display:none}
+  .statz-windows-icon{width:32px;height:32px;flex-basis:32px}
+}
+</style>
 
 </body>
 </html>
