@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Squad Call — chama a galera pra jogar</title>
+<title>Statz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -318,13 +318,6 @@
   .vol-mute-btn:hover{ border-color: var(--accent); }
   .vol-mute-btn.active{ background: var(--danger-dim); border-color: var(--danger-dim); color:#fff; }
 
-  /* ---------- Botão viva-voz / fone (só aparece em telas de toque, i.e. celular) ---------- */
-  #speakerBtn{ display:none; }
-  @media (pointer: coarse){
-    #speakerBtn{ display:flex; }
-  }
-  #speakerBtn.active{ background: var(--ok); color:#0c1a0c; border-color: var(--ok); }
-
   /* ---------- Ícones + tooltips ---------- */
   .icon{ width:20px; height:20px; display:block; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
   .ctrl-btn{ position:relative; }
@@ -364,6 +357,32 @@
     bottom:auto;
     top:calc(100% + 8px);
   }
+
+  /* ---------- Engrenagem de configurações (cantinho da tela) ---------- */
+  .settings-fab{
+    position:fixed; top:16px; right:16px; z-index:60;
+    width:44px; height:44px; border-radius:50%; border:1px solid var(--line);
+    background: rgba(20,20,20,0.85); backdrop-filter: blur(10px); color: var(--text);
+    display:flex; align-items:center; justify-content:center;
+    transition: all .15s ease;
+  }
+  .settings-fab:hover, .settings-fab.active{ border-color: var(--accent); color: var(--accent); }
+  .settings-menu{
+    display:none;
+    position:fixed; top:66px; right:16px; z-index:59;
+    min-width:190px;
+    background: rgba(16,16,16,0.96); backdrop-filter: blur(14px);
+    border:1px solid var(--line); border-radius:14px;
+    padding:6px; box-shadow: 0 16px 40px -12px rgba(0,0,0,0.8);
+  }
+  .settings-menu.active{ display:block; }
+  .settings-menu button{
+    width:100%; display:flex; align-items:center; gap:10px;
+    background:none; border:none; color:var(--text); text-align:left;
+    padding:10px 12px; border-radius:9px; font-size:13.5px; font-weight:500;
+  }
+  .settings-menu button:hover{ background: var(--surface-2); }
+  .settings-menu .icon{ width:18px; height:18px; color: var(--muted); flex-shrink:0; }
 
   /* ---------- Dispositivos de áudio ---------- */
   .audio-panel{
@@ -434,9 +453,9 @@
 
 <!-- LOBBY -->
 <div class="card" id="lobby">
-  <div class="eyebrow"><span class="dot"></span>Squad Call</div>
-  <h1>Chama a galera pra jogar 🎮</h1>
-  <p class="sub">Chamada de vídeo em grupo, com opção de compartilhar tela. Sem instalar nada — só abrir o link e mandar o código pra galera.</p>
+  <div class="eyebrow"><span class="dot"></span>Statz</div>
+  <h1>Chama a galera 🎮</h1>
+  <p class="sub">Chamada em grupo sem instalar nada. Abre o link e chama a galera.</p>
   <div class="error" id="mediaWarning" style="display:none; margin-bottom:18px;"></div>
 
   <div class="profile-row">
@@ -465,7 +484,7 @@
   <div class="pane" id="paneJoin">
     <label for="codeInput">Código da sala</label>
     <div class="join-row">
-      <input type="text" id="codeInput" class="mono" placeholder="EX: QUEST-4821" maxlength="12">
+      <input type="text" id="codeInput" class="mono" placeholder="Ex: 482" maxlength="3" inputmode="numeric" pattern="[0-9]*">
       <button class="primary-btn" id="joinBtn" style="width:auto;padding:12px 18px;">Entrar</button>
     </div>
   </div>
@@ -494,7 +513,6 @@
       <video id="myVideo" autoplay playsinline muted></video>
       <div class="tile-empty" id="myEmpty">
         <div id="myEmptyAv" class="big-av-fallback">👤</div>
-        <span>Câmera desligada</span>
       </div>
       <div class="tile-tag" id="myTag">
         <span id="myTagAv" class="av-fallback">👤</span>
@@ -539,23 +557,26 @@
     <div class="audio-hint">Se a Alexa estiver conectada ao PC/celular como saída de áudio, ela aparecerá aqui. O navegador só consegue usar dispositivos que o sistema disponibiliza para ele.</div>
   </div>
 
+  <button class="settings-fab" id="settingsBtn" data-tooltip="Configurações" aria-label="Configurações">
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  </button>
+  <div class="settings-menu" id="settingsMenu">
+    <button type="button" data-panel="audioPanel"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path><path d="M8 21h8"></path></svg>Áudio</button>
+    <button type="button" data-panel="qualityPanel"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path><circle cx="9" cy="6" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="11" cy="18" r="2"></circle></svg>Qualidade</button>
+    <button type="button" data-panel="syncPanel"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"></path><path d="M3 21v-5h5"></path></svg>Sincronismo</button>
+  </div>
+
   <div class="controls">
     <button class="ctrl-btn" id="micBtn" data-tooltip="Microfone ligado" aria-label="Microfone ligado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path><path d="M8 22h8"></path></svg></button>
-    <button class="ctrl-btn" id="camBtn" data-tooltip="Câmera ligada" aria-label="Câmera ligada"><svg class="icon" viewBox="0 0 24 24"><path d="M14 8l4-2v12l-4-2z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg></button>
-    <button class="ctrl-btn" id="speakerBtn" data-tooltip="Trocar saída de áudio" aria-label="Trocar saída de áudio"><svg class="icon" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"></path><path d="M15 9a4 4 0 0 1 0 6"></path><path d="M18 6a8 8 0 0 1 0 12"></path></svg></button>
-    <button class="ctrl-btn" id="audioBtn" data-tooltip="Microfone e saída de áudio" aria-label="Microfone e saída de áudio"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path><path d="M8 21h8"></path></svg></button>
     <button class="ctrl-btn" id="shareBtn" data-tooltip="Compartilhar tela" aria-label="Compartilhar tela"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg></button>
-    <button class="ctrl-btn" id="qualityBtn" data-tooltip="Qualidade da transmissão" aria-label="Qualidade da transmissão"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path><circle cx="9" cy="6" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="11" cy="18" r="2"></circle></svg></button>
-    <button class="ctrl-btn" id="syncBtn" data-tooltip="Sincronizar áudio e vídeo" aria-label="Sincronizar áudio e vídeo"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"></path><path d="M3 21v-5h5"></path></svg></button>
     <button class="ctrl-btn fullscreen" id="fullscreenBtn" data-tooltip="Tela cheia" aria-label="Tela cheia"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3H3v5"></path><path d="M16 3h5v5"></path><path d="M21 16v5h-5"></path><path d="M3 16v5h5"></path></svg></button>
     <button class="ctrl-btn hangup" id="hangupBtn" data-tooltip="Sair da chamada" aria-label="Sair da chamada"><svg class="icon" viewBox="0 0 24 24"><path d="M5 15c3.5-3 10.5-3 14 0"></path><path d="M8 13l-2 4"></path><path d="M16 13l2 4"></path></svg></button>
   </div>
 </div>
 
 <script>
-const ROOM_PREFIX = 'squadcall-';
-const WORDS = ["QUEST","COMBO","LEVEL","PIXEL","BONUS","CO-OP","TURBO","ARENA"];
-const PROFILE_KEY = 'squadcall_profile';
+const ROOM_PREFIX = 'statz-';
+const PROFILE_KEY = 'statz_profile';
 
 // Servidores STUN/TURN: com só STUN, 2 pessoas costumam conectar direto,
 // mas com mais gente na sala é comum algum par de participantes estar atrás
@@ -573,9 +594,7 @@ const ICE_CONFIG = {
 };
 
 function genCode(){
-  const w = WORDS[Math.floor(Math.random()*WORDS.length)];
-  const n = Math.floor(1000 + Math.random()*9000);
-  return `${w}-${n}`;
+  return String(Math.floor(100 + Math.random()*900));
 }
 
 const $ = id => document.getElementById(id);
@@ -596,7 +615,7 @@ function switchTab(which){
 const urlParams = new URLSearchParams(location.search);
 if(urlParams.get('room')){
   switchTab('join');
-  $('codeInput').value = urlParams.get('room').toUpperCase();
+  $('codeInput').value = (urlParams.get('room') || '').replace(/\D/g,'').slice(0,3);
 }
 
 // ---------- Profile (nome + foto) ----------
@@ -720,8 +739,14 @@ let speakingRAF = null;
 const SPEAKING_THRESHOLD = 0.02;
 
 document.addEventListener('click', (e) => {
-  if(e.target.closest('.vol-btn') || e.target.closest('.vol-panel') || e.target.closest('#audioPanel') || e.target.closest('#audioBtn') || e.target.closest('#speakerBtn')) return;
-  document.querySelectorAll('.vol-panel.active').forEach(p => p.classList.remove('active'));
+  // Fecha o menu de configurações ao clicar fora dele
+  if(!e.target.closest('#settingsMenu') && !e.target.closest('#settingsBtn')){
+    $('settingsMenu').classList.remove('active');
+  }
+  // Fecha os painéis de volume por participante ao clicar fora
+  if(!e.target.closest('.vol-btn') && !e.target.closest('.vol-panel')){
+    document.querySelectorAll('.vol-panel.active').forEach(p => p.classList.remove('active'));
+  }
 });
 
 function showError(msg){
@@ -879,12 +904,6 @@ function setMicButton(){
 }
 
 function updateCamUI(){
-  $('camBtn').classList.toggle('off', !camOn);
-  $('camBtn').dataset.tooltip = camOn ? 'Desligar câmera' : 'Ligar câmera';
-  $('camBtn').setAttribute('aria-label', camOn ? 'Desligar câmera' : 'Ligar câmera');
-  $('camBtn').innerHTML = camOn
-    ? '<svg class="icon" viewBox="0 0 24 24"><path d="M14 8l4-2v12l-4-2z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg>'
-    : '<svg class="icon" viewBox="0 0 24 24"><path d="M14 8l4-2v12l-4-2z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect><path d="M4 4l16 16"></path></svg>';
   $('myEmpty').style.display = (camOn || sharing) ? 'none' : 'flex';
 }
 
@@ -936,7 +955,7 @@ function createTile(id){
   const empty = document.createElement('div');
   empty.className = 'tile-empty';
   empty.style.display = 'flex';
-  empty.innerHTML = `<div class="big-av-fallback">👤</div><span>Conectando…</span>`;
+  empty.innerHTML = `<div class="big-av-fallback">👤</div>`;
 
   const tag = document.createElement('div');
   tag.className = 'tile-tag';
@@ -1170,10 +1189,6 @@ function updateEmptyVisibility(entry){
     const stream = entry.stream || (entry.video && entry.video.srcObject);
     const vt = stream ? stream.getVideoTracks()[0] : null;
     show = !(vt && vt.readyState === 'live' && vt.enabled && !vt.muted);
-  }
-  if(show){
-    const span = entry.empty.querySelector('span:last-child');
-    if(span) span.textContent = entry.stream ? 'Sem vídeo' : 'Conectando…';
   }
   entry.empty.style.display = show ? 'flex' : 'none';
 }
@@ -1415,7 +1430,7 @@ function wireDataConn(conn){
 }
 
 // ---------- Reentrada na última sala ----------
-const ROOM_STATE_KEY = 'squadcall_last_room';
+const ROOM_STATE_KEY = 'statz_last_room';
 
 function saveRoomState(code, host){
   try{
@@ -1551,7 +1566,7 @@ async function joinRoom(code, reconnecting = false){
     return;
   }
 
-  roomCode = code.trim().toUpperCase();
+  roomCode = code.trim().replace(/\D/g,'').slice(0,3);
   isHost = false;
   saveRoomState(roomCode, false);
   const hostId = ROOM_PREFIX + roomCode;
@@ -1596,7 +1611,11 @@ async function joinRoom(code, reconnecting = false){
 
 $('createBtn').onclick = () => createRoom();
 
-$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim().toUpperCase());
+$('codeInput').addEventListener('input', () => {
+  $('codeInput').value = $('codeInput').value.replace(/\D/g,'').slice(0,3);
+});
+
+$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim());
 
 $('micBtn').onclick = () => {
   ensureAudioCtx();
@@ -1610,17 +1629,6 @@ $('micBtn').oncontextmenu = (e) => {
   e.preventDefault();
   if(!window.matchMedia('(pointer: coarse)').matches) openAudioPanel();
   return false;
-};
-
-$('camBtn').onclick = () => {
-  if(window.noCameraDevice){
-    showErrorInCall('Esse aparelho não tem câmera detectada — dá pra usar só com voz e compartilhar tela.');
-    return;
-  }
-  camOn = !camOn;
-  if(localStream) localStream.getVideoTracks().forEach(t => t.enabled = camOn);
-  updateCamUI();
-  broadcastCamState();
 };
 
 function getVideoSenders(){
@@ -1802,11 +1810,33 @@ $('myExpandBtn').onclick = () => {
   $('myTile').requestFullscreen?.().catch(()=>{});
 };
 
-$('syncBtn').onclick = () => {
-  $('syncPanel').classList.toggle('active');
+function closeAllSettingsPanels(){
+  $('syncPanel').classList.remove('active');
   $('qualityPanel').classList.remove('active');
   $('audioPanel').classList.remove('active');
+}
+
+function openAudioPanel(){
+  closeAllSettingsPanels();
+  $('audioPanel').classList.add('active');
+  listAudioDevices();
+}
+
+$('settingsBtn').onclick = (e) => {
+  e.stopPropagation();
+  $('settingsMenu').classList.toggle('active');
 };
+
+$('settingsMenu').querySelectorAll('button[data-panel]').forEach(btn => {
+  btn.onclick = () => {
+    $('settingsMenu').classList.remove('active');
+    const panelId = btn.dataset.panel;
+    closeAllSettingsPanels();
+    if(panelId === 'audioPanel') openAudioPanel();
+    else $(panelId).classList.add('active');
+  };
+});
+
 $('syncSlider').oninput = (e) => {
   const ms = parseInt(e.target.value, 10);
   $('syncValue').textContent = ms + 'ms';
@@ -1814,11 +1844,6 @@ $('syncSlider').oninput = (e) => {
   peers.forEach(entry => applyAudioGraph(entry));
 };
 
-$('qualityBtn').onclick = () => {
-  $('qualityPanel').classList.toggle('active');
-  $('syncPanel').classList.remove('active');
-  $('audioPanel').classList.remove('active');
-};
 document.querySelectorAll('.quality-opt').forEach(btn => {
   btn.onclick = async () => {
     currentQuality = btn.dataset.q;
@@ -1953,14 +1978,6 @@ async function setOutputDevice(deviceId){
   return applied;
 }
 
-$('audioBtn').onclick = async (e) => {
-  e.stopPropagation();
-  $('audioPanel').classList.toggle('active');
-  $('qualityPanel').classList.remove('active');
-  $('syncPanel').classList.remove('active');
-  if($('audioPanel').classList.contains('active')) await listAudioDevices();
-};
-
 $('refreshAudioDevices').onclick = listAudioDevices;
 
 $('inputDevice').onchange = e => changeInputDevice(e.target.value);
@@ -1968,14 +1985,6 @@ $('inputDevice').onchange = e => changeInputDevice(e.target.value);
 $('outputDevice').onchange = async e => {
   const ok = await setOutputDevice(e.target.value);
   if(!ok) showErrorInCall('Esse navegador não permite trocar a saída de áudio.');
-};
-
-$('speakerBtn').onclick = async () => {
-  // Mantém o botão de alto-falante como atalho para o painel de saídas.
-  $('audioPanel').classList.toggle('active');
-  $('qualityPanel').classList.remove('active');
-  $('syncPanel').classList.remove('active');
-  if($('audioPanel').classList.contains('active')) await listAudioDevices();
 };
 
 navigator.mediaDevices?.addEventListener?.('devicechange', () => {
@@ -2005,6 +2014,6 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v4</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5 · early access</div>
 </body>
 </html>
