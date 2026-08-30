@@ -437,6 +437,7 @@
   <div class="eyebrow"><span class="dot"></span>Squad Call</div>
   <h1>Chama a galera pra jogar 🎮</h1>
   <p class="sub">Chamada de vídeo em grupo, com opção de compartilhar tela. Sem instalar nada — só abrir o link e mandar o código pra galera.</p>
+  <div class="error" id="mediaWarning" style="display:none; margin-bottom:18px;"></div>
 
   <div class="profile-row">
     <div class="avatar-wrap">
@@ -746,8 +747,59 @@ function ensureAudioCtx(){
   return audioCtx;
 }
 
+// ---------- Diagnóstico de câmera/microfone ----------
+// Navegadores embutidos de apps (Instagram, WhatsApp, TikTok, Facebook...) costumam
+// bloquear getUserMedia sem nem mostrar o pedido de permissão — sintoma clássico
+// de "não aparece a permissão e não consegue entrar".
+function detectInAppBrowser(){
+  const ua = navigator.userAgent || '';
+  const patterns = [/FBAN|FBAV/i, /Instagram/i, /Line\//i, /MicroMessenger/i, /TikTok|musical_ly|Bytedance/i, /Twitter/i, /GSA\/(?!.*Safari)/i];
+  return patterns.some(p => p.test(ua));
+}
+
+function checkMediaSupport(){
+  const warn = $('mediaWarning');
+  if(!warn) return;
+  if(!window.isSecureContext){
+    warn.textContent = 'Esse link não está em https — o navegador bloqueia câmera/microfone em endereços não seguros. Confere se o link começa com https://.';
+    warn.style.display = 'block';
+  } else if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    warn.textContent = 'Esse navegador não dá acesso à câmera/microfone. Se você abriu esse link pelo Instagram, WhatsApp, TikTok ou outro app, toca nos três pontinhos (⋮) e escolha "Abrir no navegador" (Chrome ou Safari).';
+    warn.style.display = 'block';
+  } else if(detectInAppBrowser()){
+    warn.textContent = 'Parece que esse link foi aberto dentro de um app (Instagram/TikTok/Facebook). Se a permissão de câmera não aparecer ao clicar em Entrar, abre esse link direto no Chrome ou Safari.';
+    warn.style.display = 'block';
+  }
+}
+checkMediaSupport();
+
+function mediaErrorMessage(e){
+  const name = e?.name || '';
+  if(name === 'NotSupportedError'){
+    return 'Esse navegador não dá acesso à câmera/microfone. Se abriu o link pelo Instagram, WhatsApp, TikTok ou outro app, toca nos três pontinhos (⋮) e escolha "Abrir no navegador".';
+  }
+  if(name === 'NotAllowedError' || name === 'PermissionDeniedError'){
+    return 'A câmera/microfone foi bloqueada antes nesse navegador. Toca no cadeado (ou ⓘ) ao lado do endereço do site, permite câmera e microfone, e recarrega a página.';
+  }
+  if(name === 'NotFoundError' || name === 'DevicesNotFoundError'){
+    return 'Não encontrei câmera ou microfone nesse aparelho. Confere se tem algum conectado.';
+  }
+  if(name === 'NotReadableError' || name === 'TrackStartError'){
+    return 'A câmera ou microfone já está sendo usada por outro programa (Zoom, Teams, outra aba...). Fecha os outros e tenta de novo.';
+  }
+  if(name === 'SecurityError'){
+    return 'O navegador bloqueou por segurança — o link precisa começar com https://.';
+  }
+  return 'Não consegui acessar sua câmera/microfone. Verifica as permissões do navegador e tenta de novo.';
+}
+
 async function getLocalStream(){
   if(localStream) return localStream;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    const err = new Error('getUserMedia indisponível');
+    err.name = 'NotSupportedError';
+    throw err;
+  }
   const audioConstraints = {
     echoCancellation: true,
     noiseSuppression: true,
@@ -1159,14 +1211,14 @@ function wireCall(call){
   });
 }
 
-function callPeer(id){
+function callPeer(id, force){
   if(id === myId || !peer || !localStream) return;
   if(peers.has(id) && peers.get(id).call) return;
-  // Evita "ligação dupla": sem isso, os dois lados discam um pro outro ao mesmo
-  // tempo assim que o canal de dados abre, o que cria duas negociações WebRTC
-  // concorrentes pro mesmo par e sobrecarrega o TURN gratuito — sintoma clássico
-  // de "alguns conectam, outros ficam presos em conectando".
-  if(myId && String(myId) > String(id)){
+  // Na 1ª tentativa, só o lado com id "menor" liga — evita os dois discando ao
+  // mesmo tempo (dobra carga no TURN gratuito). Mas se essa ligação não vingar,
+  // scheduleConnectWatchdog chama de novo com force=true e o outro lado assume,
+  // pra ninguém ficar esperando pra sempre.
+  if(!force && myId && String(myId) > String(id)){
     scheduleConnectWatchdog(id);
     return;
   }
@@ -1178,26 +1230,29 @@ function callPeer(id){
 
 // Se depois de um tempo a chamada com alguém não trouxe stream nenhuma
 // (nem a nossa nem a dele chegou), tenta de novo — cobre tanto ICE/TURN que
-// travou quanto o caso raro de ninguém ter discado por engano.
+// travou quanto o caso do lado "certo" de ligar ter falhado silenciosamente.
 const connectAttempts = new Map(); // id -> tentativas
 function scheduleConnectWatchdog(id){
   if(id === myId) return;
   setTimeout(() => {
     const entry = peers.get(id);
-    const hasStream = entry && entry.stream;
-    if(hasStream) { connectAttempts.delete(id); return; }
+    if(entry && entry.stream){ connectAttempts.delete(id); return; }
     const attempts = (connectAttempts.get(id) || 0) + 1;
     connectAttempts.set(id, attempts);
-    if(entry?.call){ try{ entry.call.close(); }catch(e){} }
-    if(attempts <= 3){
-      if(entry) entry.call = null;
-      callPeer(id);
-    } else if(entry && entry.empty){
-      const span = entry.empty.querySelector('span:last-child');
-      if(span) span.textContent = 'Não consegui conectar — provavelmente firewall/rede. Tenta recarregar.';
-      entry.empty.style.display = 'flex';
+    if(entry && entry.call){ try{ entry.call.close(); }catch(e){} entry.call = null; }
+    if(attempts <= 4){
+      callPeer(id, true); // força ligar, não importa de quem "era a vez" — evita deadlock
+    } else {
+      const msg = 'Não consegui conectar com alguém na sala — provavelmente firewall/rede. Tenta recarregar.';
+      if(entry && entry.empty){
+        const span = entry.empty.querySelector('span:last-child');
+        if(span) span.textContent = msg;
+        entry.empty.style.display = 'flex';
+      } else {
+        showErrorInCall(msg);
+      }
     }
-  }, 9000);
+  }, 6000);
 }
 
 function sendProfile(conn){
@@ -1366,7 +1421,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
   try{
     await getLocalStream();
   }catch(e){
-    showError('Não consegui acessar sua câmera/microfone. Verifique as permissões do navegador.');
+    showError(mediaErrorMessage(e));
     $('createBtn').disabled = false;
     $('createBtn').textContent = 'Criar sala';
     return;
@@ -1433,7 +1488,7 @@ async function joinRoom(code, reconnecting = false){
   try{
     await getLocalStream();
   }catch(e){
-    showError('Não consegui acessar sua câmera/microfone. Verifique as permissões do navegador.');
+    showError(mediaErrorMessage(e));
     $('joinBtn').disabled = false;
     $('joinBtn').textContent = 'Entrar';
     return;
