@@ -2150,9 +2150,14 @@ $('shareBtn').onclick = async () => {
         // Quando a captura nativa por aplicativo está ativa, NÃO pedimos áudio
         // do sistema/tela. Isso evita áudio duplicado e, principalmente, evita
         // recapturar a voz dos participantes da chamada.
-        audio: nativeAppAudioActive
+        // Desktop: NUNCA captura o áudio geral da tela/sistema.
+        // O áudio no app desktop deve vir somente da captura nativa por processo.
+        // Isso impede que a voz dos participantes da call volte para a transmissão.
+        audio: window.__TAURI__
           ? false
-          : { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: false }
+          : (nativeAppAudioActive
+              ? false
+              : { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: false })
       });
 
       const screenTrack = screenStream.getVideoTracks()[0];
@@ -2204,7 +2209,7 @@ $('shareBtn').onclick = async () => {
       } else if(screenAudioStream){
         showErrorInCall('Áudio ativado. Pra evitar eco, prefira compartilhar uma aba específica (não a tela toda).', 6000);
       } else {
-        showErrorInCall('Tela compartilhada sem áudio.');
+        showErrorInCall('Tela compartilhada sem áudio do sistema. No Desktop, selecione um app em Áudio → Áudio do aplicativo.');
       }
     }catch(e){
       screenStream?.getTracks?.().forEach(t => t.stop());
