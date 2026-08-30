@@ -1175,6 +1175,8 @@ updateCamButton();
 let roster = [];
 const peers = new Map();
 let dataConns = new Map();
+let joinedHostOnce = false;
+let roomExitInProgress = false;
 let audioCtx = null;
 let audioOutputNode = null;
 let audioOutputEl = null;
@@ -2063,6 +2065,16 @@ function pruneHostRoster(){
 
 function handleDataMessage(fromId, msg, sourceConn = null){
   if(!msg || !msg.type) return;
+
+  if(msg.type === 'room-closed'){
+    // Só o host da sala atual pode derrubar a sala de um convidado.
+    const expectedHostId = ROOM_PREFIX + roomCode;
+    if(!isHost && fromId === expectedHostId){
+      exitRoomToMenu({ forgetRoom: true });
+    }
+    return;
+  }
+
   if(msg.type === 'hello'){
     if(isHost){
       const conn = (sourceConn && sourceConn.open) ? sourceConn : dataConns.get(fromId);
@@ -2216,6 +2228,7 @@ function wireDataConn(conn){
     // anterior, "hello" só era enviado pela PRIMEIRA conexão criada em joinRoom;
     // se ela fosse substituída durante uma corrida, o host nunca recebia o roster handshake.
     if(!isHost && String(id).startsWith(ROOM_PREFIX)){
+      joinedHostOnce = true;
       try{ conn.send({ type: 'hello' }); }catch(e){}
     }
 
@@ -2248,6 +2261,9 @@ function wireDataConn(conn){
       }, 650);
     }
     scheduleParticipantCleanup(id);
+    if(!isHost && joinedHostOnce && id === (ROOM_PREFIX + roomCode)){
+      scheduleHostGoneCheck(id);
+    }
   };
 
   conn.on('close', onGone);
@@ -2261,6 +2277,55 @@ function resetConnectionRuntime(){
   connectAttempts.clear();
   connectWatchdogs.forEach(timer => clearTimeout(timer));
   connectWatchdogs.clear();
+}
+
+function exitRoomToMenu({ forgetRoom = false } = {}){
+  if(roomExitInProgress) return;
+  roomExitInProgress = true;
+
+  if(forgetRoom) clearRoomState();
+
+  stopNativeAppAudio({silent:true}).catch(()=>{});
+  if(speakingRAF) cancelAnimationFrame(speakingRAF);
+  connectWatchdogs.forEach(timer => clearTimeout(timer));
+  connectWatchdogs.clear();
+
+  peers.forEach(entry => {
+    try{ entry.call?.close(); }catch(e){}
+  });
+  dataConns.forEach(c => {
+    try{ c.close(); }catch(e){}
+  });
+
+  if(peer){
+    try{ peer.disconnect(); }catch(e){}
+    try{ peer.destroy(); }catch(e){}
+  }
+  peer = null;
+  myId = null;
+
+  if(localStream) localStream.getTracks().forEach(t => t.stop());
+  if(screenStream) screenStream.getTracks().forEach(t => t.stop());
+  if(audioCtx){ try{ audioCtx.close(); }catch(e){} }
+
+  location.href = location.pathname;
+}
+
+function scheduleHostGoneCheck(hostId){
+  // Fallback para quando o host fecha a janela/app ou perde a conexão sem conseguir
+  // enviar a mensagem explícita "room-closed". Pequena tolerância evita falso positivo
+  // em uma reconexão transitória.
+  if(isHost || !joinedHostOnce || roomExitInProgress) return;
+  setTimeout(() => {
+    if(isHost || !joinedHostOnce || roomExitInProgress) return;
+    const hostConn = dataConns.get(hostId);
+    const hostEntry = peers.get(hostId);
+    const hasOpenData = !!hostConn?.open;
+    const hasLiveMedia = !!hostEntry?.stream;
+    if(!hasOpenData && !hasLiveMedia){
+      exitRoomToMenu({ forgetRoom: true });
+    }
+  }, 3000);
 }
 
 // ---------- Reentrada na última sala ----------
@@ -2338,6 +2403,8 @@ async function createRoom(requestedCode = null, reconnecting = false){
   }
 
   if(!reconnecting) resetConnectionRuntime();
+  joinedHostOnce = false;
+  roomExitInProgress = false;
   roomCode = requestedCode || genCode();
   isHost = true;
   peer = new Peer(ROOM_PREFIX + roomCode, { config: ICE_CONFIG });
@@ -2426,6 +2493,8 @@ async function joinRoom(code, reconnecting = false){
   }
 
   if(!reconnecting) resetConnectionRuntime();
+  joinedHostOnce = false;
+  roomExitInProgress = false;
   roomCode = cleanCode;
   isHost = false;
   const hostId = ROOM_PREFIX + roomCode;
@@ -3151,23 +3220,28 @@ navigator.mediaDevices?.addEventListener?.('devicechange', () => {
     listAudioDevices();
 });
 
-$('hangupBtn').onclick = () => {
-  stopNativeAppAudio({silent:true}).catch(()=>{});
-  // Guarda a sala para que "Sair" não obrigue a criar outro código.
-  if(roomCode) saveRoomState(roomCode, isHost);
-  if(speakingRAF) cancelAnimationFrame(speakingRAF);
-  peers.forEach(entry => { try{ entry.call?.close(); }catch(e){} });
-  dataConns.forEach(c => { try{ c.close(); }catch(e){} });
-  if(peer){
-    try{ peer.disconnect(); }catch(e){}
-    try{ peer.destroy(); }catch(e){}
+$('hangupBtn').onclick = async () => {
+  if(roomExitInProgress) return;
+
+  if(isHost){
+    // O host é dono da sala. Ao sair, avisa todos os convidados para voltarem
+    // ao menu e apaga o código salvo, porque essa sala deixou de existir.
+    dataConns.forEach(c => {
+      if(c.open){
+        try{ c.send({ type: 'room-closed' }); }catch(e){}
+      }
+    });
+    clearRoomState();
+
+    // Dá um instante para o PeerJS despachar a mensagem antes de destruir o peer.
+    await new Promise(resolve => setTimeout(resolve, 180));
+    exitRoomToMenu({ forgetRoom: true });
+    return;
   }
-  peer = null;
-  myId = null;
-  if(localStream) localStream.getTracks().forEach(t => t.stop());
-  if(screenStream) screenStream.getTracks().forEach(t => t.stop());
-  if(audioCtx){ try{ audioCtx.close(); }catch(e){} }
-  location.href = location.pathname;
+
+  // Convidado saindo sozinho: mantém o comportamento de permitir "Reentrar".
+  if(roomCode) saveRoomState(roomCode, false);
+  exitRoomToMenu({ forgetRoom: false });
 };
 
 ['click','touchstart','keydown'].forEach(ev => {
@@ -3179,7 +3253,7 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.1 · stable candidate</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.2 · stable candidate</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
