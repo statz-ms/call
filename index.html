@@ -1244,6 +1244,26 @@ function playJoinSound(){
   }catch(e){}
 }
 
+// Reforça as faixas enviadas numa chamada específica com o que está ativo
+// agora (tela compartilhada ou câmera/mic). Sem isso, se a negociação inicial
+// pegar um instante de transição, quem entra depois de alguém já estar
+// compartilhando a tela pode ficar sem ver essa transmissão.
+function resyncSenders(call){
+  if(!call || !call.peerConnection) return;
+  const videoTrack = getCurrentVideoStream()?.getVideoTracks()[0] || null;
+  const audioTrack = (sharing && screenMixedAudioStream?.getAudioTracks()[0])
+    || (localStream ? localStream.getAudioTracks()[0] : null);
+  const senders = call.peerConnection.getSenders();
+  const vSender = senders.find(s => s.track && s.track.kind === 'video');
+  const aSender = senders.find(s => s.track && s.track.kind === 'audio');
+  if(vSender && videoTrack && vSender.track !== videoTrack){
+    vSender.replaceTrack(videoTrack).then(() => { if(sharing) applyQuality(vSender); }).catch(()=>{});
+  }
+  if(aSender && audioTrack && aSender.track !== audioTrack){
+    aSender.replaceTrack(audioTrack).catch(()=>{});
+  }
+}
+
 function wireCall(call){
   const id = call.peer;
   let entry = peers.get(id);
@@ -1260,7 +1280,8 @@ function wireCall(call){
     entry.call = call;
   }
 
-  call.on('stream', stream => attachRemoteStream(entry, stream));
+  resyncSenders(call);
+  call.on('stream', stream => { attachRemoteStream(entry, stream); resyncSenders(call); });
   call.on('close', () => {
     if(peers.get(id)?.call === call) removeTile(id);
   });
@@ -1665,9 +1686,12 @@ $('shareBtn').onclick = async () => {
       // audio:true faz o Chrome/Edge mostrar a opção "Compartilhar áudio"
       // quando o tipo de captura escolhido permitir. O áudio só é enviado
       // se o usuário marcar essa opção no seletor do navegador.
+      // echoCancellation/noiseSuppression aqui ajudam o navegador a filtrar
+      // o próprio áudio da chamada que está tocando no alto-falante, que é
+      // a causa mais comum do eco quando se compartilha tela com áudio.
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: q.frameRate, max: q.frameRate }, width: { ideal: q.width }, height: { ideal: q.height } },
-        audio: true
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false, suppressLocalAudioPlayback: true }
       });
 
       const screenTrack = screenStream.getVideoTracks()[0];
@@ -1732,7 +1756,7 @@ $('shareBtn').onclick = async () => {
       screenTrack.onended = () => stopSharing();
 
       if(screenAudioStream){
-        showErrorInCall('Áudio da transmissão ativado.');
+        showErrorInCall('Áudio ativado. Pra evitar eco, prefira compartilhar uma aba específica (não a tela toda).', 6000);
       } else {
         showErrorInCall('Tela compartilhada sem áudio.');
       }
@@ -1800,9 +1824,9 @@ async function stopSharing(){
   broadcastCamState();
 }
 
-function showErrorInCall(msg){
+function showErrorInCall(msg, duration = 3000){
   $('connStatus').textContent = msg;
-  setTimeout(()=> $('connStatus').textContent = peers.size ? 'conectado' : 'esperando a galera entrar…', 3000);
+  setTimeout(()=> $('connStatus').textContent = peers.size ? 'conectado' : 'esperando a galera entrar…', duration);
 }
 
 $('fullscreenBtn').onclick = () => {
