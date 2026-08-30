@@ -2050,11 +2050,23 @@ function applyProfileUpdate(id, name, avatar){
   if(entry.tag) updateTileProfile(entry);
 }
 
+function pruneHostRoster(){
+  if(!isHost) return;
+  roster = roster.filter(id => {
+    const conn = dataConns.get(id);
+    const entry = peers.get(id);
+    return !!((conn && conn.open) || entry?.call || entry?.stream);
+  });
+  hostKnownProfiles.forEach((_, id) => { if(!roster.includes(id)) hostKnownProfiles.delete(id); });
+  hostKnownMicStates.forEach((_, id) => { if(!roster.includes(id)) hostKnownMicStates.delete(id); });
+}
+
 function handleDataMessage(fromId, msg, sourceConn = null){
   if(!msg || !msg.type) return;
   if(msg.type === 'hello'){
     if(isHost){
       const conn = (sourceConn && sourceConn.open) ? sourceConn : dataConns.get(fromId);
+      pruneHostRoster();
       if(conn){
         conn.send({ type: 'roster', peers: roster.slice() });
         // manda de uma vez todos os perfis que o anfitrião já conhece, pra
@@ -2417,43 +2429,83 @@ async function joinRoom(code, reconnecting = false){
   roomCode = cleanCode;
   isHost = false;
   const hostId = ROOM_PREFIX + roomCode;
-  peer = new Peer(undefined, { config: ICE_CONFIG });
 
-  peer.on('open', id => {
-    reconnectAttempts = 0;
+  // IMPORTANTÍSSIMO: cada tentativa captura o Peer que ela própria criou.
+  // Callbacks antigos nunca podem destruir/reiniciar um Peer mais novo.
+  const thisPeer = new Peer(undefined, { config: ICE_CONFIG });
+  peer = thisPeer;
+  let hostDataOpened = false;
+  let retryScheduled = false;
+
+  const retryHostConnection = () => {
+    if(retryScheduled || peer !== thisPeer) return;
+    retryScheduled = true;
+    reconnectAttempts++;
+    try{ thisPeer.destroy(); }catch(e){}
+    if(peer === thisPeer) peer = null;
+    showError('Reconectando à sala… tentativa ' + reconnectAttempts + '/8.');
+    setTimeout(() => {
+      // Se outra tentativa já criou um Peer, esse timer antigo morre aqui.
+      if(peer !== null) return;
+      joinRoom(roomCode, true);
+    }, 1200);
+  };
+
+  thisPeer.on('open', id => {
+    if(peer !== thisPeer) return;
     myId = id;
     $('resumeBtn').disabled = false;
     $('resumeBtn').textContent = 'Reentrar';
     enterCallUI();
     setMicButton();
-    const conn = peer.connect(hostId, { reliable: true });
+
+    const conn = thisPeer.connect(hostId, { reliable: true });
     wireDataConn(conn);
-    conn.on('open', () => saveRoomState(roomCode, false));
-    conn.on('error', () => showErrorInCall('Não achei essa sala. Confere o código com a galera.'));
+    conn.on('open', () => {
+      if(peer !== thisPeer) return;
+      hostDataOpened = true;
+      reconnectAttempts = 0;
+      saveRoomState(roomCode, false);
+    });
+    conn.on('error', () => {
+      if(peer !== thisPeer) return;
+      if(!hostDataOpened && reconnecting && reconnectAttempts < 8) retryHostConnection();
+      else if(!hostDataOpened) showErrorInCall('Não achei essa sala. Confere o código com a galera.');
+    });
     callPeer(hostId);
   });
-  peer.on('connection', conn => wireDataConn(conn));
-  peer.on('call', call => {
+
+  thisPeer.on('connection', conn => {
+    if(peer !== thisPeer){ try{ conn.close(); }catch(e){} return; }
+    wireDataConn(conn);
+  });
+  thisPeer.on('call', call => {
+    if(peer !== thisPeer){ try{ call.close(); }catch(e){} return; }
     const streamToSend = new MediaStream(getCurrentTracks());
     call.answer(streamToSend);
     wireCall(call);
     ensureDataConn(call.peer);
   });
-  peer.on('error', err => {
-    if(err.type === 'peer-unavailable' && reconnecting && reconnectAttempts < 8){
-      reconnectAttempts++;
-      try{ peer?.destroy(); }catch(e){}
-      peer = null;
-      myId = null;
-      showError('Reconectando à sala… tentativa ' + reconnectAttempts + '/8.');
-      setTimeout(() => joinRoom(roomCode, true), 1200);
+  thisPeer.on('error', err => {
+    if(peer !== thisPeer) return;
+
+    if(err.type === 'peer-unavailable'){
+      // PeerJS dispara isso também quando UM OUTRO participante do roster sumiu.
+      // Antes, em reentrada, qualquer peer-unavailable reiniciava a sala inteira,
+      // criando IDs novos sem parar e dezenas de tiles clonadas.
+      if(!hostDataOpened && reconnecting && reconnectAttempts < 8){
+        retryHostConnection();
+      }else if(!hostDataOpened){
+        showError('Sala não encontrada. Confere o código e se ela está aberta.');
+        $('joinBtn').disabled = false;
+        $('joinBtn').textContent = 'Entrar';
+      }
+      // Se o host JÁ abriu o data channel, o erro pertence a outro participante.
+      // Não reinicia a sala inteira.
       return;
     }
-    if(err.type === 'peer-unavailable'){
-      showError('Sala não encontrada. Confere o código e se ela está aberta.');
-    }else{
-      showError('Erro de conexão: ' + (err.type || err));
-    }
+
+    showError('Erro de conexão: ' + (err.type || err));
     $('joinBtn').disabled = false;
     $('joinBtn').textContent = 'Entrar';
     $('resumeBtn').disabled = false;
@@ -3127,7 +3179,7 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.0 · stable</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.1 · stable candidate</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
