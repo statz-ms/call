@@ -633,6 +633,40 @@ body{
 /* Mantém vermelho/verde semântico para erro, sair e status administrativos.
    A identidade principal fica roxa, mas feedback crítico continua fácil de ler. */
 
+
+
+/* ---------- Statz lobby hero ---------- */
+.lobby-hero{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:2px 0 24px;
+}
+.lobby-hero img{
+  display:block;
+  width:min(250px,72vw);
+  max-height:220px;
+  object-fit:contain;
+  filter:drop-shadow(0 16px 26px rgba(100,58,190,.28));
+  user-select:none;
+  -webkit-user-drag:none;
+}
+@media(max-width:700px){
+  .lobby-hero{margin:0 0 20px}
+  .lobby-hero img{width:min(220px,70vw);max-height:190px}
+}
+
+
+
+/* ---------- Perfil obrigatório ---------- */
+.profile-required-error{
+  border-color:var(--danger)!important;
+  box-shadow:0 0 0 2px rgba(228,95,120,.12);
+}
+.avatar-wrap.profile-required-error .avatar-placeholder,
+.avatar-wrap.profile-required-error .avatar-preview{
+  border-color:var(--danger)!important;
+}
 </style>
 <style>
 #authGate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 0%,rgba(192,192,192,.08),transparent 45%),#090909}
@@ -676,7 +710,7 @@ body.in-call #logoutFab{display:none!important;}
 <body>
 <div id="authGate">
   <div class="auth-box">
-    <div class="auth-brand">SquadCall</div>
+    <div class="auth-brand">Statz - 1.0 stable<title>Statz</title></div>
     <div class="auth-sub">Acesso privado. Use sua conta para entrar.</div>
     <div class="auth-tabs"><button type="button" id="authLoginTab" class="active" onclick="authTab('login')">Entrar</button><button type="button" id="authRegisterTab" onclick="authTab('register')">Criar conta</button></div>
     <div id="authLoginPane" class="auth-pane active">
@@ -701,7 +735,7 @@ body.in-call #logoutFab{display:none!important;}
   </div>
 </div>
 <button id="adminOpenBtn">👑 Admin</button>
-<button id="logoutFab" type="button">🚪 Sair</button>
+<button id="logoutFab" type="button">Sair da conta</button>
 <div id="adminModal"><div class="admin-box">
   <div class="admin-head"><div><h2>Painel administrativo</h2><div class="admin-meta">Gere KEYs e aprove ou bloqueie usuários.</div></div><button class="admin-close" id="adminClose">×</button></div>
   <div class="admin-section"><h3>🔑 Gerar KEY</h3><div class="admin-create"><input id="newKeyLabel" placeholder="Descrição (opcional)"><input id="newKeyUses" type="number" min="1" max="100" value="1" style="max-width:100px"><button class="admin-btn primary" id="newKeyBtn">+ Gerar</button></div><div id="adminKeys" style="margin-top:10px"></div></div>
@@ -710,9 +744,10 @@ body.in-call #logoutFab{display:none!important;}
 
 <!-- LOBBY -->
 <div class="card" id="lobby">
-  <div class="eyebrow"><span class="dot"></span>Statz</div>
-  <h1>Chama a galera 🎮</h1>
-  <p class="sub">Chamada em grupo sem instalar nada. Abre o link e chama a galera.</p>
+  <div class="eyebrow"><span class="dot"></span>Online</div>
+  <div class="lobby-hero" aria-hidden="true">
+    <img src="statz-mascot.png" alt="">
+  </div>
   <div class="error" id="mediaWarning" style="display:none; margin-bottom:18px;"></div>
 
   <div class="profile-row">
@@ -819,7 +854,7 @@ body.in-call #logoutFab{display:none!important;}
           <option value="">Desativado</option>
         </select>
       </div>
-      <div class="native-audio-status" id="nativeAppAudioStatus">Selecione um jogo/app. O SquadCall vai capturar somente o áudio desse processo.</div>
+      <div class="native-audio-status" id="nativeAppAudioStatus">Selecione um jogo/app. A Statz vai capturar somente o áudio desse processo.</div>
     </div>
     <button class="audio-refresh" id="refreshAudioDevices" type="button">Atualizar dispositivos</button>
     <div class="audio-hint">Se a Alexa estiver conectada ao PC/celular como saída de áudio, ela aparecerá aqui. O navegador só consegue usar dispositivos que o sistema disponibiliza para ele.</div>
@@ -1073,6 +1108,43 @@ $('avatarInput').onchange = async (e) => {
 $('nameInput').addEventListener('change', saveProfile);
 $('nameInput').addEventListener('blur', saveProfile);
 
+function validateRequiredProfile(){
+  saveProfile();
+
+  const nameOk = myProfile.name.trim().length > 0;
+  const avatarOk = typeof myProfile.avatar === 'string' && myProfile.avatar.startsWith('data:image');
+
+  $('nameInput').classList.toggle('profile-required-error', !nameOk);
+  document.querySelector('.avatar-wrap')?.classList.toggle('profile-required-error', !avatarOk);
+
+  if(!nameOk && !avatarOk){
+    showError('Coloque seu nome e escolha uma foto antes de entrar em uma sala.');
+    $('nameInput').focus();
+    return false;
+  }
+  if(!nameOk){
+    showError('Coloque seu nome antes de entrar em uma sala.');
+    $('nameInput').focus();
+    return false;
+  }
+  if(!avatarOk){
+    showError('Escolha uma foto antes de entrar em uma sala.');
+    return false;
+  }
+
+  errorMsg.style.display = 'none';
+  return true;
+}
+
+$('nameInput').addEventListener('input', () => {
+  if($('nameInput').value.trim()) $('nameInput').classList.remove('profile-required-error');
+});
+$('avatarInput').addEventListener('change', () => {
+  setTimeout(() => {
+    if(myProfile.avatar) document.querySelector('.avatar-wrap')?.classList.remove('profile-required-error');
+  }, 0);
+});
+
 loadProfile();
 
 const QUALITY_PRESETS = {
@@ -1086,6 +1158,7 @@ let currentQuality = 'media';
 
 let peer = null;
 let myId = null;
+let reconnectAttempts = 0;
 let localStream = null;
 let cameraTrack = null;
 let screenStream = null;
@@ -2125,6 +2198,8 @@ function renderResumeRoom(){
 async function reconnectToSavedRoom(){
   const saved = loadRoomState();
   if(!saved?.code) return;
+  if(!validateRequiredProfile()) return;
+  reconnectAttempts = 0;
   $('resumeBtn').disabled = true;
   $('resumeBtn').textContent = 'Reconectando…';
   $('codeInput').value = saved.code;
@@ -2149,7 +2224,8 @@ renderResumeRoom();
 
 async function createRoom(requestedCode = null, reconnecting = false){
   errorMsg.style.display = 'none';
-  saveProfile();
+  if(!validateRequiredProfile()) return;
+  if(!reconnecting) reconnectAttempts = 0;
   $('createBtn').disabled = true;
   $('createBtn').textContent = reconnecting ? 'Reconectando…' : 'Preparando câmera…';
   try{
@@ -2166,7 +2242,10 @@ async function createRoom(requestedCode = null, reconnecting = false){
   peer = new Peer(ROOM_PREFIX + roomCode, { config: ICE_CONFIG });
 
   peer.on('open', id => {
+    reconnectAttempts = 0;
     myId = id;
+    $('resumeBtn').disabled = false;
+    $('resumeBtn').textContent = 'Reentrar';
     saveRoomState(roomCode, true);
     const link = location.origin + location.pathname + '?room=' + roomCode;
     $('createResult').innerHTML = `
@@ -2204,19 +2283,31 @@ async function createRoom(requestedCode = null, reconnecting = false){
     ensureDataConn(call.peer);
   });
   peer.on('error', err => {
+    if(err.type === 'unavailable-id' && reconnecting && reconnectAttempts < 8){
+      reconnectAttempts++;
+      try{ peer?.destroy(); }catch(e){}
+      peer = null;
+      myId = null;
+      showError('Aguardando a sala antiga ser liberada… tentando novamente (' + reconnectAttempts + '/8).');
+      setTimeout(() => createRoom(roomCode, true), 1200);
+      return;
+    }
     if(err.type === 'unavailable-id' && reconnecting){
-      showErrorInCall('A sala ainda está sendo encerrada pelo servidor. Tente reentrar em alguns segundos.');
+      showError('A sala ainda não foi liberada pelo servidor. Aguarde alguns segundos e tente novamente.');
     }else{
       showError('Erro de conexão: ' + (err.type || err) + '.');
     }
     $('createBtn').disabled = false;
     $('createBtn').textContent = 'Criar sala';
+    $('resumeBtn').disabled = false;
+    $('resumeBtn').textContent = 'Reentrar';
   });
 }
 
 async function joinRoom(code, reconnecting = false){
   errorMsg.style.display = 'none';
-  saveProfile();
+  if(!validateRequiredProfile()) return;
+  if(!reconnecting) reconnectAttempts = 0;
   $('joinBtn').disabled = true;
   $('joinBtn').textContent = 'Entrando…';
   try{
@@ -2235,7 +2326,10 @@ async function joinRoom(code, reconnecting = false){
   peer = new Peer(undefined, { config: ICE_CONFIG });
 
   peer.on('open', id => {
+    reconnectAttempts = 0;
     myId = id;
+    $('resumeBtn').disabled = false;
+    $('resumeBtn').textContent = 'Reentrar';
     enterCallUI();
     setMicButton();
     const conn = peer.connect(hostId, { reliable: true });
@@ -2255,9 +2349,12 @@ async function joinRoom(code, reconnecting = false){
     ensureDataConn(call.peer);
   });
   peer.on('error', err => {
-    if(err.type === 'peer-unavailable' && reconnecting && reconnectAttempts < 6){
+    if(err.type === 'peer-unavailable' && reconnecting && reconnectAttempts < 8){
       reconnectAttempts++;
       try{ peer?.destroy(); }catch(e){}
+      peer = null;
+      myId = null;
+      showError('Reconectando à sala… tentativa ' + reconnectAttempts + '/8.');
       setTimeout(() => joinRoom(roomCode, true), 1200);
       return;
     }
@@ -2268,6 +2365,8 @@ async function joinRoom(code, reconnecting = false){
     }
     $('joinBtn').disabled = false;
     $('joinBtn').textContent = 'Entrar';
+    $('resumeBtn').disabled = false;
+    $('resumeBtn').textContent = 'Reentrar';
   });
 }
 
@@ -2916,7 +3015,12 @@ $('hangupBtn').onclick = () => {
   if(speakingRAF) cancelAnimationFrame(speakingRAF);
   peers.forEach(entry => { try{ entry.call?.close(); }catch(e){} });
   dataConns.forEach(c => { try{ c.close(); }catch(e){} });
-  if(peer) peer.destroy();
+  if(peer){
+    try{ peer.disconnect(); }catch(e){}
+    try{ peer.destroy(); }catch(e){}
+  }
+  peer = null;
+  myId = null;
   if(localStream) localStream.getTracks().forEach(t => t.stop());
   if(screenStream) screenStream.getTracks().forEach(t => t.stop());
   if(audioCtx){ try{ audioCtx.close(); }catch(e){} }
@@ -2932,7 +3036,7 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5.2 · admin fix</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">V1.0.0 · stable</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
