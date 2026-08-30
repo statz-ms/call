@@ -266,9 +266,9 @@
   .sync-label span{ color: var(--ok); font-family:'JetBrains Mono', monospace; }
   .sync-panel input[type=range]{ width:100%; accent-color: var(--ok); }
   .sync-hint{ font-size:11.5px; color: var(--muted); margin-top:10px; line-height:1.4; }
-  .quality-options{ display:flex; gap:8px; }
+  .quality-options{ display:flex; gap:8px; flex-wrap:wrap; }
   .quality-opt{
-    flex:1; background: var(--surface-2); border:1px solid var(--line); color: var(--muted);
+    flex:1 1 95px; background: var(--surface-2); border:1px solid var(--line); color: var(--muted);
     border-radius:10px; padding:10px 4px; font-size:12.5px; font-weight:600; line-height:1.45;
   }
   .quality-opt span{ font-weight:500; color: var(--muted); font-size:11px; }
@@ -465,6 +465,24 @@
 .auth-submit{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:#c0c0c0;color:#111;font-weight:800;cursor:pointer}.auth-msg{display:none;margin-top:12px;padding:10px;border-radius:9px;font-size:11px;line-height:1.4}.auth-msg.show{display:block}.auth-msg.error{background:#351818;color:#ffb7b7}.auth-msg.ok{background:#17351d;color:#b9ffc5}.auth-note{font-size:10px;color:#777;line-height:1.45;margin-top:12px}
 #adminOpenBtn{display:none;position:fixed;top:16px;left:16px;z-index:70;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}#adminOpenBtn.show{display:block}
 #adminModal{display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}#adminModal.active{display:flex}.admin-box{width:min(760px,96vw);max-height:88vh;overflow:auto;background:#151515;border:1px solid #333;border-radius:18px;padding:20px}.admin-head{display:flex;justify-content:space-between;align-items:flex-start}.admin-head h2{margin:0;font-size:20px}.admin-close{border:0;background:transparent;color:#aaa;font-size:25px;cursor:pointer}.admin-section{border:1px solid #2f2f2f;border-radius:12px;padding:14px;margin-top:12px;background:#1b1b1b}.admin-section h3{font-size:12px;margin:0 0 10px}.admin-create{display:flex;gap:8px}.admin-create input{min-width:0;flex:1;background:#242424;color:#fff;border:1px solid #333;border-radius:8px;padding:9px;font:inherit;font-size:11px}.admin-btn{border:1px solid #3a3a3a;background:#252525;color:#eee;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:700;cursor:pointer}.admin-btn.primary{color:#c0c0c0;border-color:#777}.admin-btn.danger{color:#ffb4b4}.admin-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #2a2a2a}.admin-row:first-child{border-top:0}.admin-name{font-size:12px;font-weight:700}.admin-meta{font-size:10px;color:#777;margin-top:3px}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-key{font:700 14px 'JetBrains Mono',monospace;color:#8bc48b;letter-spacing:.05em}@media(max-width:600px){.admin-create{flex-direction:column}.admin-row{flex-direction:column}.admin-actions{justify-content:flex-start}}
+
+
+/* ---------- Sessão / status de microfone ---------- */
+#logoutFab{
+  display:none; position:fixed; top:16px; right:16px; z-index:71;
+  background:#1c1c1c; color:#fff; border:1px solid #333; border-radius:10px;
+  padding:9px 12px; font-weight:700; cursor:pointer;
+}
+#logoutFab.show{display:block;}
+#logoutFab:hover{border-color:var(--accent); color:var(--accent);}
+body.in-call #logoutFab{display:none!important;}
+.mic-status-icon{
+  display:none; align-items:center; justify-content:center; flex:0 0 auto;
+  width:16px; height:16px; color:var(--danger); margin-left:2px;
+}
+.mic-status-icon.show{display:inline-flex;}
+.mic-status-icon .icon{width:15px;height:15px;stroke-width:2.2;}
+
 </style>
 </head>
 <body>
@@ -491,6 +509,7 @@
   </div>
 </div>
 <button id="adminOpenBtn">👑 Admin</button>
+<button id="logoutFab" type="button">🚪 Sair</button>
 <div id="adminModal"><div class="admin-box">
   <div class="admin-head"><div><h2>Painel administrativo</h2><div class="admin-meta">Gere KEYs e aprove ou bloqueie usuários.</div></div><button class="admin-close" id="adminClose">×</button></div>
   <div class="admin-section"><h3>🔑 Gerar KEY</h3><div class="admin-create"><input id="newKeyLabel" placeholder="Descrição (opcional)"><input id="newKeyUses" type="number" min="1" max="100" value="1" style="max-width:100px"><button class="admin-btn primary" id="newKeyBtn">+ Gerar</button></div><div id="adminKeys" style="margin-top:10px"></div></div>
@@ -562,7 +581,7 @@
       </div>
       <div class="tile-tag" id="myTag">
         <span id="myTagAv" class="av-fallback">👤</span>
-        <span id="myTagName">Você</span>
+        <span id="myTagName">Você</span><span id="myMicStatus" class="mic-status-icon" title="Microfone mutado" aria-label="Microfone mutado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg></span>
       </div>
       <button class="expand-btn" id="myExpandBtn" title="Ver minha transmissão em tela cheia">⤢</button>
     </div>
@@ -577,9 +596,11 @@
   <div class="sync-panel" id="qualityPanel">
     <div class="sync-label">Qualidade da tela compartilhada</div>
     <div class="quality-options" id="qualityOptions">
-      <button class="quality-opt" data-q="alta">Alta<br><span>720p60</span></button>
-      <button class="quality-opt active" data-q="media">Média<br><span>720p30</span></button>
-      <button class="quality-opt" data-q="baixa">Baixa<br><span>480p24</span></button>
+      <button class="quality-opt" data-q="full60">1080p<br><span>60 FPS</span></button>
+      <button class="quality-opt" data-q="full30">1080p<br><span>30 FPS</span></button>
+      <button class="quality-opt" data-q="alta">720p<br><span>60 FPS</span></button>
+      <button class="quality-opt active" data-q="media">720p<br><span>30 FPS</span></button>
+      <button class="quality-opt" data-q="baixa">480p<br><span>24 FPS</span></button>
     </div>
     <div class="sync-hint">Se a imagem tá atrasada, tenta um nível abaixo — geralmente resolve.</div>
   </div>
@@ -627,7 +648,7 @@
 const $ = id => document.getElementById(id);
 
 // ---------- Login / cadastro / sessão offline ----------
-const AUTH_API = window.SQUADCALL_AUTH_API || 'https://justice-hotels-meaning-std.trycloudflare.com';
+const AUTH_API = window.SQUADCALL_AUTH_API || 'https://discovery-plains-convicted-honolulu.trycloudflare.com';
 const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
 const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
@@ -651,14 +672,14 @@ window.authTab = function authTab(which){$('authLoginTab').classList.toggle('act
 $('authLoginTab').onclick=()=>window.authTab('login');$('authRegisterTab').onclick=()=>window.authTab('register');
 $('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
 $('authRegBtn').onclick=async()=>{try{const username=$('authRegUser').value.trim(),name=$('authRegName').value.trim()||username,password=$('authRegPass').value,p2=$('authRegPass2').value,key=$('authRegKey').value.trim().toUpperCase();if(!username||!password||!key)throw new Error('Preencha usuário, senha e KEY.');if(password!==p2)throw new Error('As senhas não coincidem.');await authApi('/api/auth/register',{method:'POST',body:JSON.stringify({username,display_name:name,password,invite_key:key})});authTab('login');$('authLoginUser').value=username;authMessage('Conta criada. Aguarde sua aprovação pelo administrador.',true);}catch(e){authMessage(e.message);}};
-function showAuthenticated(){$('authGate').classList.add('hidden');if(authUser?.role==='admin')$('adminOpenBtn').classList.add('show');}
+function showAuthenticated(){$('authGate').classList.add('hidden');$('logoutFab')?.classList.add('show');if(authUser?.role==='admin')$('adminOpenBtn').classList.add('show');}
 async function bootAuth(){const token=getSession();if(!token)return;const ok=await verifySessionToken(token);if(!ok){clearSession();return;}try{const d=decodeJwt(token);authUser={id:d.payload.sub,username:d.payload.username,display_name:d.payload.name,role:d.payload.role};showAuthenticated();}catch(e){clearSession();}}
 $('adminClose').onclick=()=>$('adminModal').classList.remove('active');$('adminOpenBtn').onclick=async()=>{$('adminModal').classList.add('active');await refreshAdminPanel();};
 function escA(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function refreshAdminPanel(){try{const [u,k]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys')]);$('adminUsers').innerHTML=(u.users||[]).map(x=>`<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span style="color:${x.approved&&x.active?'#8bc48b':'#e07070'}">${x.approved?(x.active?'🟢 aprovado':'🔴 bloqueado'):'🟡 aguardando'}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)}</div></div><div class="admin-actions">${!x.approved&&x.active?`<button class="admin-btn primary" onclick='approveUser(${JSON.stringify(String(x.id))})'>Aprovar</button>`:''}${x.approved&&x.active&&x.id!==authUser.id?`<button class="admin-btn danger" onclick='setUser(${JSON.stringify(String(x.id))},false)'>Bloquear</button>`:''}${!x.active?`<button class="admin-btn primary" onclick='setUser(${JSON.stringify(String(x.id))},true)'>Ativar</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick='deleteUser(${JSON.stringify(String(x.id))})'>Excluir</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhum usuário.</div>'; $('adminKeys').innerHTML=(k.keys||[]).map(x=>`<div class="admin-row"><div><div class="admin-key">${escA(x.key)}</div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${x.revoked?'🔴 revogada':'🟢 ativa'}</div></div><div class="admin-actions"><button class="admin-btn" onclick="copyKey('${escA(x.key)}')">Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick='revokeKey(${JSON.stringify(String(x.id))})'>Revogar</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhuma KEY.</div>';}catch(e){alert(e.message);}}
 window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({approved:true,active:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.setUser=async(id,active)=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({active})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.deleteUser=async id=>{if(!confirm('Excluir usuário?'))return;try{await authApi('/api/admin/users/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.revokeKey=async id=>{if(!confirm('Revogar KEY?'))return;try{await authApi('/api/admin/invite-keys/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.copyKey=async k=>{try{await navigator.clipboard.writeText(k);alert('KEY copiada: '+k);}catch(e){alert(k);}};
 $('newKeyBtn').onclick=async()=>{try{const label=$('newKeyLabel').value.trim(),max_uses=Math.max(1,Math.min(100,Number($('newKeyUses').value)||1));await authApi('/api/admin/invite-keys',{method:'POST',body:JSON.stringify({label,max_uses})});$('newKeyLabel').value='';await refreshAdminPanel();}catch(e){alert(e.message);}};
-$('logoutBtn')?.addEventListener('click',()=>{clearSession();location.reload();});
+const doLogout=()=>{clearSession();location.reload();};$('logoutBtn')?.addEventListener('click',doLogout);$('logoutFab')?.addEventListener('click',doLogout);
 bootAuth();
 const ROOM_PREFIX = 'statz-';
 const PROFILE_KEY = 'statz_profile';
@@ -788,9 +809,11 @@ $('nameInput').addEventListener('blur', saveProfile);
 loadProfile();
 
 const QUALITY_PRESETS = {
-  alta:  { width:1280, height:720, frameRate:60, maxBitrate:3000000, label:'Alta (720p60)' },
-  media: { width:1280, height:720, frameRate:30, maxBitrate:1800000, label:'Média (720p30)' },
-  baixa: { width:854,  height:480, frameRate:24, maxBitrate:900000,  label:'Baixa (480p24)' }
+  full60:{ width:1920, height:1080, frameRate:60, maxBitrate:8000000, label:'1080p60' },
+  full30:{ width:1920, height:1080, frameRate:30, maxBitrate:5000000, label:'1080p30' },
+  alta:  { width:1280, height:720,  frameRate:60, maxBitrate:3000000, label:'720p60' },
+  media: { width:1280, height:720,  frameRate:30, maxBitrate:1800000, label:'720p30' },
+  baixa: { width:854,  height:480,  frameRate:24, maxBitrate:900000,  label:'480p24' }
 };
 let currentQuality = 'media';
 
@@ -990,6 +1013,27 @@ function setMicButton(){
   btn.innerHTML = micOn
     ? '<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path><path d="M8 22h8"></path></svg>'
     : '<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg>';
+  updateLocalMicStatus();
+}
+
+
+function updateLocalMicStatus(){
+  const icon = $('myMicStatus');
+  if(icon) icon.classList.toggle('show', !micOn);
+}
+
+function updateRemoteMicStatus(entry){
+  if(!entry?.tag) return;
+  const icon = entry.tag.querySelector('.mic-status-icon');
+  if(icon) icon.classList.toggle('show', entry.remoteMicOn === false);
+}
+
+function broadcastMicState(){
+  dataConns.forEach(c => {
+    if(c.open){
+      try{ c.send({ type:'mic-state', micOn: !!micOn }); }catch(e){}
+    }
+  });
 }
 
 function updateCamUI(){
@@ -1048,7 +1092,7 @@ function createTile(id){
 
   const tag = document.createElement('div');
   tag.className = 'tile-tag';
-  tag.innerHTML = `<span class="av-fallback">👤</span><span class="name">Participante</span>`;
+  tag.innerHTML = `<span class="av-fallback">👤</span><span class="name">Participante</span><span class="mic-status-icon" title="Microfone mutado" aria-label="Microfone mutado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg></span>`;
 
   const expandBtn = document.createElement('button');
   expandBtn.className = 'expand-btn';
@@ -1108,7 +1152,7 @@ function createTile(id){
   tile.append(video, empty, tag, expandBtn, volBtn, volPanel);
   videoGrid.appendChild(tile);
   $('waitingTile').style.display = 'none';
-  return { tile, video, tag, empty, volBtn, volPanel, volSlider, volValue, volMuteBtn };
+  return { tile, video, tag, empty, volBtn, volPanel, volSlider, volValue, volMuteBtn, remoteMicOn: true };
 }
 
 function updateTileProfile(entry){
@@ -1133,6 +1177,8 @@ function updateTileProfile(entry){
       avEl.textContent = letter;
     }
   }
+
+  updateRemoteMicStatus(entry);
 
   if(entry.empty){
     const big = entry.empty.querySelector('.big-av, .big-av-fallback');
@@ -1470,6 +1516,7 @@ function broadcastCamState(){
 // convidados (sem passar pelo anfitrião) é a que mais falha em redes difíceis,
 // então o nome não pode depender só dela.
 const hostKnownProfiles = new Map(); // id -> {name, avatar}
+const hostKnownMicStates = new Map(); // id -> boolean
 
 function applyProfileUpdate(id, name, avatar){
   let entry = peers.get(id);
@@ -1496,9 +1543,13 @@ function handleDataMessage(fromId, msg){
         hostKnownProfiles.forEach((p, pid) => {
           conn.send({ type: 'profile-relay', id: pid, name: p.name, avatar: p.avatar });
         });
+        hostKnownMicStates.forEach((state, pid) => {
+          conn.send({ type:'mic-state-relay', id:pid, micOn:!!state });
+        });
         sendProfile(conn);
         conn.send({ type: 'profile-request' });
         conn.send({ type: 'cam-state', camOn: camOn || sharing });
+        conn.send({ type: 'mic-state', micOn: !!micOn });
       }
       if(!roster.includes(fromId)){
         roster.push(fromId);
@@ -1539,6 +1590,32 @@ function handleDataMessage(fromId, msg){
     }
     entry.remoteCamOn = !!msg.camOn;
     updateEmptyVisibility(entry);
+  } else if(msg.type === 'mic-state'){
+    let entry = peers.get(fromId);
+    if(!entry){
+      entry = { id: fromId, profile: null, remoteCamOn: true };
+      peers.set(fromId, entry);
+    }
+    entry.remoteMicOn = !!msg.micOn;
+    updateRemoteMicStatus(entry);
+    if(isHost){
+      hostKnownMicStates.set(fromId, !!msg.micOn);
+      dataConns.forEach((c, pid) => {
+        if(pid !== fromId && c.open){
+          try{ c.send({ type:'mic-state-relay', id:fromId, micOn:!!msg.micOn }); }catch(e){}
+        }
+      });
+    }
+  } else if(msg.type === 'mic-state-relay'){
+    if(msg.id && msg.id !== myId){
+      let entry = peers.get(msg.id);
+      if(!entry){
+        entry = { id: msg.id, profile: null, remoteCamOn: true };
+        peers.set(msg.id, entry);
+      }
+      entry.remoteMicOn = !!msg.micOn;
+      updateRemoteMicStatus(entry);
+    }
   } else if(msg.type === 'profile-request'){
     const conn = dataConns.get(fromId);
     if(conn) sendProfile(conn);
@@ -1562,6 +1639,7 @@ function wireDataConn(conn){
   conn.on('open', () => {
     sendProfile(conn);
     conn.send({ type: 'cam-state', camOn: camOn || sharing });
+    conn.send({ type: 'mic-state', micOn: !!micOn });
     conn.send({ type: 'profile-request' });
     callPeer(id);
     setTimeout(() => {
@@ -1770,6 +1848,7 @@ $('micBtn').onclick = () => {
   if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = micOn);
   if(screenMicGain) screenMicGain.gain.value = micOn ? 1 : 0;
   setMicButton();
+  broadcastMicState();
 };
 
 $('micBtn').oncontextmenu = (e) => {
