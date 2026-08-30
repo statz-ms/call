@@ -472,7 +472,7 @@
   <div class="auth-box">
     <div class="auth-brand">SquadCall</div>
     <div class="auth-sub">Acesso privado. Use sua conta para entrar.</div>
-    <div class="auth-tabs"><button id="authLoginTab" class="active">Entrar</button><button id="authRegisterTab">Criar conta</button></div>
+    <div class="auth-tabs"><button type="button" id="authLoginTab" class="active" onclick="authTab('login')">Entrar</button><button type="button" id="authRegisterTab" onclick="authTab('register')">Criar conta</button></div>
     <div id="authLoginPane" class="auth-pane active">
       <label class="auth-label">Usuário</label><input class="auth-input" id="authLoginUser" autocomplete="username">
       <label class="auth-label">Senha</label><input class="auth-input" id="authLoginPass" type="password" autocomplete="current-password">
@@ -623,35 +623,33 @@
 
 <script>
 
+// Helper DOM — precisa existir antes do código de autenticação.
+const $ = id => document.getElementById(id);
+
 // ---------- Login / cadastro / sessão offline ----------
 const AUTH_API = window.SQUADCALL_AUTH_API || 'https://discovery-plains-convicted-honolulu.trycloudflare.com';
 const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
-const AUTH_PUBLIC_KEY_STORAGE = 'squadcall_auth_public_key_v1';
+const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
+757lqL9AunzrpvxrjsB8IfC21542d6gnGJmm+HrABZ1t2FlGVcxW0xmk2HhXlpMF
+GzcJsSOCg5uh15U/oiEQCtoZfrJNBHrJmFh7Eo70Qp7kNzh+Ijv8meSd+7QBhtr9
+junc3059we4dj10LJ9LdOyqlqIKWUuRYUAh+iYxCwDqZ7CdaAm1F5i0BgiGeNG2o
+fRb4x6RjvRznCAkUpC+Zc1wBfdcJcJwccjygns6Pr2yh7ZE6Zy2lBY8uFo0ARDSE
+tSaUN0vWnAlbXEq7F8oVehCPtMCreWLIjSLLvrf1Ct/aVGLiSRQ/hlq2oJhRRB9y
+awIDAQAB
+-----END PUBLIC KEY-----`;
 let authUser = null;
 function b64uToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const raw=atob(s);return Uint8Array.from(raw,c=>c.charCodeAt(0));}
 function decodeJwt(token){const p=token.split('.');if(p.length!==3)throw new Error('Token inválido');const payload=JSON.parse(new TextDecoder().decode(b64uToBytes(p[1])));return {p,payload};}
-async function fetchPublicKeyPem(){
-  try{
-    const r=await fetch(AUTH_API.replace(/\/$/,'')+'/api/auth/public-key',{cache:'no-store'});
-    if(!r.ok) throw new Error('public-key');
-    const d=await r.json();
-    if(!d.public_key) throw new Error('public-key');
-    localStorage.setItem(AUTH_PUBLIC_KEY_STORAGE,d.public_key);
-    return d.public_key;
-  }catch(e){
-    try{return localStorage.getItem(AUTH_PUBLIC_KEY_STORAGE)||'';}catch(_){return '';}
-  }
-}
-async function verifySessionToken(token){try{const {p,payload}=decodeJwt(token);if(payload.exp && Date.now()/1000>=payload.exp)return false;const pem=await fetchPublicKeyPem();if(!pem)return false;const b64=pem.replace(/-----.*?-----/g,'').replace(/\s/g,'');const key=await crypto.subtle.importKey('spki',b64uToBytes(b64),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);return await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},key,b64uToBytes(p[2]),new TextEncoder().encode(p[0]+'.'+p[1]));}catch(e){return false;}}
+async function verifySessionToken(token){try{const {p,payload}=decodeJwt(token);if(payload.exp && Date.now()/1000>=payload.exp)return false;const b64=AUTH_PUBLIC_KEY_PEM.replace(/-----.*?-----/g,'').replace(/\s/g,'');const key=await crypto.subtle.importKey('spki',b64uToBytes(b64),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);return await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},key,b64uToBytes(p[2]),new TextEncoder().encode(p[0]+'.'+p[1]));}catch(e){return false;}}
 function getSession(){try{return localStorage.getItem(AUTH_TOKEN_KEY)||''}catch(e){return ''}}
 function saveSession(token,user){localStorage.setItem(AUTH_TOKEN_KEY,token);authUser=user;}
 function clearSession(){localStorage.removeItem(AUTH_TOKEN_KEY);authUser=null;}
-$('logoutBtn').onclick=()=>{clearSession();location.reload();};
 async function authApi(path,options={}){const h={'Content-Type':'application/json',...(options.headers||{})};const token=getSession();if(token)h.Authorization='Bearer '+token;const r=await fetch(AUTH_API.replace(/\/$/,'')+path,{...options,headers:h});let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Não foi possível falar com a API.');return d;}
 function authMessage(text,ok=false){const e=$('authMsg');e.textContent=text;e.className='auth-msg show '+(ok?'ok':'error');}
-function authTab(which){$('authLoginTab').classList.toggle('active',which==='login');$('authRegisterTab').classList.toggle('active',which==='register');$('authLoginPane').classList.toggle('active',which==='login');$('authRegisterPane').classList.toggle('active',which==='register');$('authMsg').className='auth-msg';}
-$('authLoginTab').onclick=()=>authTab('login');$('authRegisterTab').onclick=()=>authTab('register');
-$('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});await fetchPublicKeyPem();saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
+window.authTab = function authTab(which){$('authLoginTab').classList.toggle('active',which==='login');$('authRegisterTab').classList.toggle('active',which==='register');$('authLoginPane').classList.toggle('active',which==='login');$('authRegisterPane').classList.toggle('active',which==='register');$('authMsg').className='auth-msg';};
+$('authLoginTab').onclick=()=>window.authTab('login');$('authRegisterTab').onclick=()=>window.authTab('register');
+$('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
 $('authRegBtn').onclick=async()=>{try{const username=$('authRegUser').value.trim(),name=$('authRegName').value.trim()||username,password=$('authRegPass').value,p2=$('authRegPass2').value,key=$('authRegKey').value.trim().toUpperCase();if(!username||!password||!key)throw new Error('Preencha usuário, senha e KEY.');if(password!==p2)throw new Error('As senhas não coincidem.');await authApi('/api/auth/register',{method:'POST',body:JSON.stringify({username,display_name:name,password,invite_key:key})});authTab('login');$('authLoginUser').value=username;authMessage('Conta criada. Aguarde sua aprovação pelo administrador.',true);}catch(e){authMessage(e.message);}};
 function showAuthenticated(){$('authGate').classList.add('hidden');if(authUser?.role==='admin')$('adminOpenBtn').classList.add('show');}
 async function bootAuth(){const token=getSession();if(!token)return;const ok=await verifySessionToken(token);if(!ok){clearSession();return;}try{const d=decodeJwt(token);authUser={id:d.payload.sub,username:d.payload.username,display_name:d.payload.name,role:d.payload.role};showAuthenticated();}catch(e){clearSession();}}
@@ -660,6 +658,7 @@ function escA(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 async function refreshAdminPanel(){try{const [u,k]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys')]);$('adminUsers').innerHTML=(u.users||[]).map(x=>`<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span style="color:${x.approved&&x.active?'#8bc48b':'#e07070'}">${x.approved?(x.active?'🟢 aprovado':'🔴 bloqueado'):'🟡 aguardando'}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)}</div></div><div class="admin-actions">${!x.approved&&x.active?`<button class="admin-btn primary" onclick="approveUser(${x.id})">Aprovar</button>`:''}${x.approved&&x.active&&x.id!==authUser.id?`<button class="admin-btn danger" onclick="setUser(${x.id},false)">Bloquear</button>`:''}${!x.active?`<button class="admin-btn primary" onclick="setUser(${x.id},true)">Ativar</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick="deleteUser(${x.id})">Excluir</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhum usuário.</div>'; $('adminKeys').innerHTML=(k.keys||[]).map(x=>`<div class="admin-row"><div><div class="admin-key">${escA(x.key)}</div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${x.revoked?'🔴 revogada':'🟢 ativa'}</div></div><div class="admin-actions"><button class="admin-btn" onclick="copyKey('${escA(x.key)}')">Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick="revokeKey(${x.id})">Revogar</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhuma KEY.</div>';}catch(e){alert(e.message);}}
 window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({approved:true,active:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.setUser=async(id,active)=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({active})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.deleteUser=async id=>{if(!confirm('Excluir usuário?'))return;try{await authApi('/api/admin/users/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.revokeKey=async id=>{if(!confirm('Revogar KEY?'))return;try{await authApi('/api/admin/invite-keys/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.copyKey=async k=>{try{await navigator.clipboard.writeText(k);alert('KEY copiada: '+k);}catch(e){alert(k);}};
 $('newKeyBtn').onclick=async()=>{try{const label=$('newKeyLabel').value.trim(),max_uses=Math.max(1,Math.min(100,Number($('newKeyUses').value)||1));await authApi('/api/admin/invite-keys',{method:'POST',body:JSON.stringify({label,max_uses})});$('newKeyLabel').value='';await refreshAdminPanel();}catch(e){alert(e.message);}};
+$('logoutBtn')?.addEventListener('click',()=>{clearSession();location.reload();});
 bootAuth();
 const ROOM_PREFIX = 'statz-';
 const PROFILE_KEY = 'statz_profile';
@@ -683,7 +682,6 @@ function genCode(){
   return String(Math.floor(100 + Math.random()*900));
 }
 
-const $ = id => document.getElementById(id);
 const lobby = $('lobby'), callScreen = $('callScreen'), videoGrid = $('videoGrid');
 const tabCreate = $('tabCreate'), tabJoin = $('tabJoin');
 const paneCreate = $('paneCreate'), paneJoin = $('paneJoin');
@@ -2144,6 +2142,6 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5 · early access</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v0.5.1 · auth fix</div>
 </body>
 </html>
