@@ -682,7 +682,6 @@ window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'
 $('newKeyBtn').onclick=async()=>{try{const label=$('newKeyLabel').value.trim(),max_uses=Math.max(1,Math.min(100,Number($('newKeyUses').value)||1));await authApi('/api/admin/invite-keys',{method:'POST',body:JSON.stringify({label,max_uses})});$('newKeyLabel').value='';await refreshAdminPanel();}catch(e){alert(e.message);}};
 const doLogout=()=>{clearSession();location.reload();};$('logoutBtn')?.addEventListener('click',doLogout);$('logoutFab')?.addEventListener('click',doLogout);
 bootAuth();
-updateCamButton();
 const ROOM_PREFIX = 'statz-';
 const PROFILE_KEY = 'statz_profile';
 
@@ -832,7 +831,8 @@ let screenMicGain = null;
 let screenSystemGain = null;
 let isHost = false;
 let roomCode = null;
-let micOn = true, camOn = true, sharing = false;
+let micOn = true, camOn = false, sharing = false;
+updateCamButton();
 let roster = [];
 const peers = new Map();
 let dataConns = new Map();
