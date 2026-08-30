@@ -7,7 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"><script>
+$('logoutBtn')?.addEventListener('click',()=>{clearSession();location.reload();});
+</script>
 <style>
   :root{
     --bg: #121212;
@@ -453,45 +455,49 @@
     .ctrl-btn{ width:44px; height:44px; }
   }
 
-
-  .access-panel{
-    display:none; position:absolute; bottom:92px; left:50%; transform:translateX(-50%);
-    width:min(460px,92vw); max-height:min(70vh,560px); overflow:auto;
-    background:rgba(16,16,16,.98); backdrop-filter:blur(16px);
-    border:1px solid var(--line); border-radius:16px; padding:16px; z-index:28;
-    box-shadow:0 18px 50px -14px rgba(0,0,0,.85);
-  }
-  .access-panel.active{display:block;}
-  .access-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;}
-  .access-sub{font-size:11px;line-height:1.45;color:var(--muted);}
-  .access-close{border:0;background:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;}
-  .access-toggle-row{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2);margin-bottom:12px;}
-  .access-toggle-row strong{display:block;font-size:12px;margin-bottom:3px;}
-  .switch{position:relative;width:42px;height:24px;display:block;flex:0 0 auto;}
-  .switch input{opacity:0;width:0;height:0;}
-  .slider{position:absolute;inset:0;border-radius:99px;background:#333;cursor:pointer;transition:.2s;}
-  .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#eee;transition:.2s;}
-  .switch input:checked + .slider{background:var(--accent);}
-  .switch input:checked + .slider:before{transform:translateX(18px);}
-  .access-create{display:flex;gap:8px;margin-bottom:12px;}
-  .access-create input{min-width:0;flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;font:inherit;font-size:12px;}
-  .access-create button,.access-copy,.access-revoke{border:1px solid var(--line);border-radius:9px;background:var(--surface-3);color:var(--text);padding:9px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;}
-  .access-create button:hover,.access-copy:hover{border-color:var(--accent);}
-  .access-list{display:flex;flex-direction:column;gap:8px;}
-  .access-item{padding:11px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2);}
-  .access-item-top{display:flex;justify-content:space-between;gap:8px;align-items:center;}
-  .access-code{font:700 15px 'JetBrains Mono',monospace;letter-spacing:.06em;}
-  .access-meta{font-size:10.5px;color:var(--muted);margin-top:4px;}
-  .access-actions{display:flex;gap:6px;margin-top:8px;}
-  .access-revoke{color:#ffb4b4;}
-  .access-current{display:none;padding:11px;border:1px solid var(--accent);border-radius:11px;background:rgba(255,193,7,.06);margin-bottom:12px;}
-  .access-current.active{display:block;}
-  .access-current .access-code{font-size:18px;}
-  @media(max-width:700px){.access-panel{bottom:82px;max-height:68vh;}.access-create{flex-direction:column;}}
-
+</style>
+<style>
+#authGate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 0%,rgba(192,192,192,.08),transparent 45%),#090909}
+#authGate.hidden{display:none}
+.auth-box{width:min(430px,94vw);background:#171717;border:1px solid #333;border-radius:20px;padding:26px;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+.auth-brand{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px}.auth-sub{font-size:12px;color:#999;margin-bottom:18px}
+.auth-tabs{display:flex;gap:6px;background:#222;padding:4px;border-radius:10px}.auth-tabs button{flex:1;border:0;background:transparent;color:#999;padding:10px;border-radius:8px;font-weight:700}.auth-tabs button.active{background:#c0c0c0;color:#111}
+.auth-pane{display:none;margin-top:16px}.auth-pane.active{display:block}.auth-label{font-size:12px;color:#aaa;margin:12px 0 6px;display:block}
+.auth-input{width:100%;box-sizing:border-box;background:#242424;border:1px solid #3a3a3a;color:#fff;padding:11px 12px;border-radius:9px;font:inherit}.auth-input:focus{outline:2px solid #c0c0c0;outline-offset:1px}
+.auth-submit{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:#c0c0c0;color:#111;font-weight:800;cursor:pointer}.auth-msg{display:none;margin-top:12px;padding:10px;border-radius:9px;font-size:11px;line-height:1.4}.auth-msg.show{display:block}.auth-msg.error{background:#351818;color:#ffb7b7}.auth-msg.ok{background:#17351d;color:#b9ffc5}.auth-note{font-size:10px;color:#777;line-height:1.45;margin-top:12px}
+#adminOpenBtn{display:none;position:fixed;top:16px;left:16px;z-index:70;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}#adminOpenBtn.show{display:block}
+#adminModal{display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}#adminModal.active{display:flex}.admin-box{width:min(760px,96vw);max-height:88vh;overflow:auto;background:#151515;border:1px solid #333;border-radius:18px;padding:20px}.admin-head{display:flex;justify-content:space-between;align-items:flex-start}.admin-head h2{margin:0;font-size:20px}.admin-close{border:0;background:transparent;color:#aaa;font-size:25px;cursor:pointer}.admin-section{border:1px solid #2f2f2f;border-radius:12px;padding:14px;margin-top:12px;background:#1b1b1b}.admin-section h3{font-size:12px;margin:0 0 10px}.admin-create{display:flex;gap:8px}.admin-create input{min-width:0;flex:1;background:#242424;color:#fff;border:1px solid #333;border-radius:8px;padding:9px;font:inherit;font-size:11px}.admin-btn{border:1px solid #3a3a3a;background:#252525;color:#eee;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:700;cursor:pointer}.admin-btn.primary{color:#c0c0c0;border-color:#777}.admin-btn.danger{color:#ffb4b4}.admin-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #2a2a2a}.admin-row:first-child{border-top:0}.admin-name{font-size:12px;font-weight:700}.admin-meta{font-size:10px;color:#777;margin-top:3px}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-key{font:700 14px 'JetBrains Mono',monospace;color:#8bc48b;letter-spacing:.05em}@media(max-width:600px){.admin-create{flex-direction:column}.admin-row{flex-direction:column}.admin-actions{justify-content:flex-start}}
 </style>
 </head>
 <body>
+<div id="authGate">
+  <div class="auth-box">
+    <div class="auth-brand">SquadCall</div>
+    <div class="auth-sub">Acesso privado. Use sua conta para entrar.</div>
+    <div class="auth-tabs"><button id="authLoginTab" class="active">Entrar</button><button id="authRegisterTab">Criar conta</button></div>
+    <div id="authLoginPane" class="auth-pane active">
+      <label class="auth-label">Usuário</label><input class="auth-input" id="authLoginUser" autocomplete="username">
+      <label class="auth-label">Senha</label><input class="auth-input" id="authLoginPass" type="password" autocomplete="current-password">
+      <button class="auth-submit" id="authLoginBtn">Entrar</button>
+    </div>
+    <div id="authRegisterPane" class="auth-pane">
+      <label class="auth-label">Usuário</label><input class="auth-input" id="authRegUser" maxlength="32" autocomplete="username">
+      <label class="auth-label">Nome exibido</label><input class="auth-input" id="authRegName" maxlength="80" autocomplete="name">
+      <label class="auth-label">Senha</label><input class="auth-input" id="authRegPass" type="password" maxlength="128" autocomplete="new-password">
+      <label class="auth-label">Confirmar senha</label><input class="auth-input" id="authRegPass2" type="password" maxlength="128" autocomplete="new-password">
+      <label class="auth-label">KEY de cadastro</label><input class="auth-input" id="authRegKey" maxlength="24" placeholder="SC-XXXXX-XXXXX" autocomplete="off">
+      <button class="auth-submit" id="authRegBtn">Criar conta</button>
+      <div class="auth-note">A conta ficará aguardando a aprovação do administrador.</div>
+    </div>
+    <div id="authMsg" class="auth-msg"></div>
+  </div>
+</div>
+<button id="adminOpenBtn">👑 Admin</button>
+<div id="adminModal"><div class="admin-box">
+  <div class="admin-head"><div><h2>Painel administrativo</h2><div class="admin-meta">Gere KEYs e aprove ou bloqueie usuários.</div></div><button class="admin-close" id="adminClose">×</button></div>
+  <div class="admin-section"><h3>🔑 Gerar KEY</h3><div class="admin-create"><input id="newKeyLabel" placeholder="Descrição (opcional)"><input id="newKeyUses" type="number" min="1" max="100" value="1" style="max-width:100px"><button class="admin-btn primary" id="newKeyBtn">+ Gerar</button></div><div id="adminKeys" style="margin-top:10px"></div></div>
+  <div class="admin-section"><h3>👤 Usuários</h3><div id="adminUsers"></div></div>
+</div></div>
 
 <!-- LOBBY -->
 <div class="card" id="lobby">
@@ -528,11 +534,6 @@
     <div class="join-row">
       <input type="text" id="codeInput" class="mono" placeholder="Ex: 482" maxlength="3" inputmode="numeric" pattern="[0-9]*">
       <button class="primary-btn" id="joinBtn" style="width:auto;padding:12px 18px;">Entrar</button>
-    </div>
-    <div style="margin-top:12px;">
-      <label for="accessCodeInput">Código de acesso</label>
-      <input type="text" id="accessCodeInput" class="mono" placeholder="Ex: GALERA-7K2P" maxlength="12" autocomplete="off" spellcheck="false">
-      <div class="audio-hint">O anfitrião pode exigir um código de acesso. Sem ele, a entrada é recusada.</div>
     </div>
   </div>
 
@@ -591,41 +592,6 @@
     <div class="sync-hint">Deixa em 0 pra voz. Só aumenta se o som da tela compartilhada chegar antes da imagem.</div>
   </div>
 
-
-  <div class="access-panel" id="accessPanel">
-    <div class="access-head">
-      <div>
-        <div class="sync-label">🔐 Controle de acesso</div>
-        <div class="access-sub">Só funciona no navegador do anfitrião. Os códigos ficam salvos neste dispositivo.</div>
-      </div>
-      <button class="access-close" id="closeAccessPanel" type="button">×</button>
-    </div>
-
-    <div class="access-toggle-row">
-      <div>
-        <strong>Exigir código para entrar</strong>
-        <div class="access-sub">Se desligado, qualquer pessoa com o código da sala pode entrar.</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="requireAccessToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="access-create">
-      <input id="accessLabelInput" type="text" maxlength="24" placeholder="Nome/apelido (opcional)">
-      <button id="generateAccessBtn" type="button">+ Criar código</button>
-    </div>
-
-    <div class="access-current" id="accessCurrent"></div>
-    <div class="access-list" id="accessList"></div>
-
-    <div class="access-sub" style="margin-top:10px;">
-      ⚠️ Isto é uma whitelist local, sem servidor: a lista pertence ao anfitrião e a este navegador.
-      Para bloquear alguém, revogue o código dela.
-    </div>
-  </div>
-
   <div class="audio-panel" id="audioPanel">
     <div class="audio-row">
       <label for="inputDevice">Microfone</label>
@@ -646,6 +612,7 @@
     <button type="button" data-panel="audioPanel"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path><path d="M8 21h8"></path></svg>Áudio</button>
     <button type="button" data-panel="qualityPanel"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path><circle cx="9" cy="6" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="11" cy="18" r="2"></circle></svg>Qualidade</button>
     <button type="button" data-panel="syncPanel"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"></path><path d="M3 21v-5h5"></path></svg>Sincronismo</button>
+    <button type="button" id="logoutBtn">🚪 Sair da conta</button>
   </div>
 
   <div class="controls">
@@ -657,6 +624,40 @@
 </div>
 
 <script>
+
+// ---------- Login / cadastro / sessão offline ----------
+const AUTH_API = window.SQUADCALL_AUTH_API || 'http://localhost:8787';
+const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
+const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
+757lqL9AunzrpvxrjsB8IfC21542d6gnGJmm+HrABZ1t2FlGVcxW0xmk2HhXlpMF
+GzcJsSOCg5uh15U/oiEQCtoZfrJNBHrJmFh7Eo70Qp7kNzh+Ijv8meSd+7QBhtr9
+junc3059we4dj10LJ9LdOyqlqIKWUuRYUAh+iYxCwDqZ7CdaAm1F5i0BgiGeNG2o
+fRb4x6RjvRznCAkUpC+Zc1wBfdcJcJwccjygns6Pr2yh7ZE6Zy2lBY8uFo0ARDSE
+tSaUN0vWnAlbXEq7F8oVehCPtMCreWLIjSLLvrf1Ct/aVGLiSRQ/hlq2oJhRRB9y
+awIDAQAB
+-----END PUBLIC KEY-----`;
+let authUser = null;
+function b64uToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const raw=atob(s);return Uint8Array.from(raw,c=>c.charCodeAt(0));}
+function decodeJwt(token){const p=token.split('.');if(p.length!==3)throw new Error('Token inválido');const payload=JSON.parse(new TextDecoder().decode(b64uToBytes(p[1])));return {p,payload};}
+async function verifySessionToken(token){try{const {p,payload}=decodeJwt(token);if(payload.exp && Date.now()/1000>=payload.exp)return false;const b64=AUTH_PUBLIC_KEY_PEM.replace(/-----.*?-----/g,'').replace(/\s/g,'');const key=await crypto.subtle.importKey('spki',b64uToBytes(b64),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);return await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},key,b64uToBytes(p[2]),new TextEncoder().encode(p[0]+'.'+p[1]));}catch(e){return false;}}
+function getSession(){try{return localStorage.getItem(AUTH_TOKEN_KEY)||''}catch(e){return ''}}
+function saveSession(token,user){localStorage.setItem(AUTH_TOKEN_KEY,token);authUser=user;}
+function clearSession(){localStorage.removeItem(AUTH_TOKEN_KEY);authUser=null;}
+async function authApi(path,options={}){const h={'Content-Type':'application/json',...(options.headers||{})};const token=getSession();if(token)h.Authorization='Bearer '+token;const r=await fetch(AUTH_API.replace(/\/$/,'')+path,{...options,headers:h});let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Não foi possível falar com a API.');return d;}
+function authMessage(text,ok=false){const e=$('authMsg');e.textContent=text;e.className='auth-msg show '+(ok?'ok':'error');}
+function authTab(which){$('authLoginTab').classList.toggle('active',which==='login');$('authRegisterTab').classList.toggle('active',which==='register');$('authLoginPane').classList.toggle('active',which==='login');$('authRegisterPane').classList.toggle('active',which==='register');$('authMsg').className='auth-msg';}
+$('authLoginTab').onclick=()=>authTab('login');$('authRegisterTab').onclick=()=>authTab('register');
+$('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
+$('authRegBtn').onclick=async()=>{try{const username=$('authRegUser').value.trim(),name=$('authRegName').value.trim()||username,password=$('authRegPass').value,p2=$('authRegPass2').value,key=$('authRegKey').value.trim().toUpperCase();if(!username||!password||!key)throw new Error('Preencha usuário, senha e KEY.');if(password!==p2)throw new Error('As senhas não coincidem.');await authApi('/api/auth/register',{method:'POST',body:JSON.stringify({username,display_name:name,password,invite_key:key})});authTab('login');$('authLoginUser').value=username;authMessage('Conta criada. Aguarde sua aprovação pelo administrador.',true);}catch(e){authMessage(e.message);}};
+function showAuthenticated(){$('authGate').classList.add('hidden');if(authUser?.role==='admin')$('adminOpenBtn').classList.add('show');}
+async function bootAuth(){const token=getSession();if(!token)return;const ok=await verifySessionToken(token);if(!ok){clearSession();return;}try{const d=decodeJwt(token);authUser={id:d.payload.sub,username:d.payload.username,display_name:d.payload.name,role:d.payload.role};showAuthenticated();}catch(e){clearSession();}}
+$('adminClose').onclick=()=>$('adminModal').classList.remove('active');$('adminOpenBtn').onclick=async()=>{$('adminModal').classList.add('active');await refreshAdminPanel();};
+function escA(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function refreshAdminPanel(){try{const [u,k]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys')]);$('adminUsers').innerHTML=(u.users||[]).map(x=>`<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span style="color:${x.approved&&x.active?'#8bc48b':'#e07070'}">${x.approved?(x.active?'🟢 aprovado':'🔴 bloqueado'):'🟡 aguardando'}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)}</div></div><div class="admin-actions">${!x.approved&&x.active?`<button class="admin-btn primary" onclick="approveUser(${x.id})">Aprovar</button>`:''}${x.approved&&x.active&&x.id!==authUser.id?`<button class="admin-btn danger" onclick="setUser(${x.id},false)">Bloquear</button>`:''}${!x.active?`<button class="admin-btn primary" onclick="setUser(${x.id},true)">Ativar</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick="deleteUser(${x.id})">Excluir</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhum usuário.</div>'; $('adminKeys').innerHTML=(k.keys||[]).map(x=>`<div class="admin-row"><div><div class="admin-key">${escA(x.key)}</div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${x.revoked?'🔴 revogada':'🟢 ativa'}</div></div><div class="admin-actions"><button class="admin-btn" onclick="copyKey('${escA(x.key)}')">Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick="revokeKey(${x.id})">Revogar</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhuma KEY.</div>';}catch(e){alert(e.message);}}
+window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({approved:true,active:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.setUser=async(id,active)=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({active})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.deleteUser=async id=>{if(!confirm('Excluir usuário?'))return;try{await authApi('/api/admin/users/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.revokeKey=async id=>{if(!confirm('Revogar KEY?'))return;try{await authApi('/api/admin/invite-keys/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.copyKey=async k=>{try{await navigator.clipboard.writeText(k);alert('KEY copiada: '+k);}catch(e){alert(k);}};
+$('newKeyBtn').onclick=async()=>{try{const label=$('newKeyLabel').value.trim(),max_uses=Math.max(1,Math.min(100,Number($('newKeyUses').value)||1));await authApi('/api/admin/invite-keys',{method:'POST',body:JSON.stringify({label,max_uses})});$('newKeyLabel').value='';await refreshAdminPanel();}catch(e){alert(e.message);}};
+bootAuth();
 const ROOM_PREFIX = 'statz-';
 const PROFILE_KEY = 'statz_profile';
 
@@ -1340,6 +1341,32 @@ function resyncSenders(call){
   }
 }
 
+
+async function renegotiateAllCalls(){
+  // PeerJS nem sempre renegocia corretamente um replaceTrack() em todos
+  // os peers. Ao trocar câmera <-> tela, recriamos as MediaConnections.
+  const ids = Array.from(peers.keys()).filter(id => id !== myId);
+
+  for(const id of ids){
+    const entry = peers.get(id);
+    if(entry?.call){
+      const oldCall = entry.call;
+      entry.call = null;
+      entry.stream = null;
+      try{ oldCall.close(); }catch(e){}
+    }
+  }
+
+  // Dá tempo para o close chegar aos dois lados antes de discar novamente.
+  await new Promise(r => setTimeout(r, 450));
+
+  for(const id of ids){
+    if(id !== myId && peer && localStream){
+      callPeer(id, true);
+    }
+  }
+}
+
 function wireCall(call){
   const id = call.peer;
   let entry = peers.get(id);
@@ -1359,10 +1386,21 @@ function wireCall(call){
   resyncSenders(call);
   call.on('stream', stream => { attachRemoteStream(entry, stream); resyncSenders(call); });
   call.on('close', () => {
-    if(peers.get(id)?.call === call) removeTile(id);
+    const current = peers.get(id);
+    if(current?.call === call){
+      current.call = null;
+      current.stream = null;
+      // Durante uma renegociação a tile continua existindo.
+      if(!sharing && !current.tile) removeTile(id);
+    }
   });
   call.on('error', () => {
-    if(peers.get(id)?.call === call) removeTile(id);
+    const current = peers.get(id);
+    if(current?.call === call){
+      current.call = null;
+      current.stream = null;
+      if(!current.tile) removeTile(id);
+    }
   });
 }
 
@@ -1447,53 +1485,6 @@ function applyProfileUpdate(id, name, avatar){
 
 function handleDataMessage(fromId, msg){
   if(!msg || !msg.type) return;
-
-  if(msg.type === 'access-request'){
-    if(!isHost) return;
-    const conn = dataConns.get(fromId);
-    if(!conn) return;
-    const ok = validAccessCode(msg.accessCode);
-    if(!ok){
-      conn.send({ type: 'access-denied', reason: 'Código de acesso inválido ou revogado.' });
-      setTimeout(() => { try{ conn.close(); }catch(e){} }, 150);
-      return;
-    }
-    conn.send({ type: 'access-ok' });
-    sendProfile(conn);
-    conn.send({ type: 'cam-state', camOn: camOn || sharing });
-    conn.send({ type: 'profile-request' });
-    if(!roster.includes(fromId)) roster.push(fromId);
-    dataConns.forEach((c, pid) => {
-      if(pid !== fromId && c.open) c.send({ type: 'peer-joined', id: fromId });
-    });
-    callPeer(fromId);
-    return;
-  }
-
-  if(msg.type === 'access-ok'){
-    if(!isHost){
-      const hostId = ROOM_PREFIX + roomCode;
-      showErrorInCall('Acesso autorizado ✓');
-      const conn = dataConns.get(hostId);
-      if(conn) conn.send({ type: 'hello' });
-      callPeer(hostId);
-    }
-    return;
-  }
-
-  if(msg.type === 'access-denied'){
-    showErrorInCall(msg.reason || 'Acesso recusado pelo anfitrião.');
-    try{ peer?.destroy(); }catch(e){}
-    dataConns.clear();
-    return;
-  }
-
-  if(msg.type === 'access-required'){
-    if(!isHost && msg.required && !pendingAccessCode){
-      showErrorInCall('Esta sala exige um código de acesso.');
-    }
-    return;
-  }
   if(msg.type === 'hello'){
     if(isHost){
       const conn = dataConns.get(fromId);
@@ -1557,39 +1548,21 @@ function ensureDataConn(peerId){
   if(!peer || peerId === myId || dataConns.has(peerId)) return;
   try{
     const conn = peer.connect(peerId, { reliable: true });
-    wireDataConn(conn, { outbound: true });
+    wireDataConn(conn);
   }catch(e){}
 }
 
-function wireDataConn(conn, opts = {}){
+function wireDataConn(conn){
   if(!conn) return;
   const id = conn.peer;
   if(dataConns.has(id)) return;
   dataConns.set(id, conn);
 
   conn.on('open', () => {
-    if(isHost && !opts.outbound){
-      conn.send({ type: 'access-required', required: requireAccess });
-      if(!requireAccess){
-        conn.send({ type: 'access-ok' });
-        sendProfile(conn);
-        conn.send({ type: 'cam-state', camOn: camOn || sharing });
-        conn.send({ type: 'profile-request' });
-        callPeer(id);
-      }
-    }else if(opts.guestHost){
-      conn.send({
-        type: 'access-request',
-        accessCode: pendingAccessCode,
-        name: myProfile.name || 'Participante'
-      });
-      sendProfile(conn);
-    }else{
-      sendProfile(conn);
-      conn.send({ type: 'cam-state', camOn: camOn || sharing });
-      conn.send({ type: 'profile-request' });
-      callPeer(id);
-    }
+    sendProfile(conn);
+    conn.send({ type: 'cam-state', camOn: camOn || sharing });
+    conn.send({ type: 'profile-request' });
+    callPeer(id);
     setTimeout(() => {
       if(conn.open) sendProfile(conn);
     }, 350);
@@ -1601,133 +1574,6 @@ function wireDataConn(conn, opts = {}){
   });
   conn.on('error', () => dataConns.delete(id));
 }
-
-
-
-function escapeHtml(v){
-  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-// ---------- Whitelist local do anfitrião ----------
-const ACCESS_CODES_KEY = 'statz_access_codes_v1';
-const ACCESS_REQUIRE_KEY = 'statz_require_access_v1';
-const ACCESS_LAST_KEY = 'statz_last_access_code_v1';
-let requireAccess = false;
-let pendingAccessCode = '';
-
-function loadAccessCodes(){
-  try{
-    const raw = localStorage.getItem(ACCESS_CODES_KEY);
-    const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
-  }catch(e){ return []; }
-}
-function saveAccessCodes(list){
-  try{ localStorage.setItem(ACCESS_CODES_KEY, JSON.stringify(list)); }catch(e){}
-}
-function loadRequireAccess(){
-  try{ return localStorage.getItem(ACCESS_REQUIRE_KEY) === '1'; }catch(e){ return false; }
-}
-function saveRequireAccess(v){
-  requireAccess = !!v;
-  try{ localStorage.setItem(ACCESS_REQUIRE_KEY, requireAccess ? '1' : '0'); }catch(e){}
-}
-function normalizeAccessCode(v){
-  return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);
-}
-function generateAccessCode(){
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  const existing = new Set(loadAccessCodes().map(x => x.code));
-  do{
-    code = 'GALERA-' + Array.from({length:5}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-  }while(existing.has(code));
-  return code;
-}
-function validAccessCode(code){
-  if(!requireAccess) return true;
-  const c = normalizeAccessCode(code);
-  return loadAccessCodes().some(x => x.active && x.code === c);
-}
-function renderAccessPanel(){
-  const listEl = $('accessList');
-  const toggle = $('requireAccessToggle');
-  if(!listEl || !toggle) return;
-  toggle.checked = requireAccess;
-  const list = loadAccessCodes();
-  listEl.innerHTML = '';
-  if(!list.length){
-    listEl.innerHTML = '<div class="access-sub" style="padding:8px 2px;">Nenhum código criado ainda.</div>';
-  }else{
-    list.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'access-item';
-      const status = item.active ? '🟢 ativo' : '🔴 revogado';
-      row.innerHTML = `
-        <div class="access-item-top">
-          <div>
-            <div class="access-code">${item.code}</div>
-            <div class="access-meta">${item.label ? escapeHtml(item.label) + ' · ' : ''}${status}</div>
-          </div>
-        </div>
-        <div class="access-actions">
-          <button class="access-copy" type="button">Copiar</button>
-          ${item.active ? '<button class="access-revoke" type="button">Revogar</button>' : ''}
-        </div>`;
-      row.querySelector('.access-copy').onclick = async () => {
-        try{ await navigator.clipboard.writeText(item.code); }catch(e){}
-        row.querySelector('.access-copy').textContent = 'Copiado ✓';
-        setTimeout(()=> row.querySelector('.access-copy').textContent='Copiar', 1200);
-      };
-      const revoke = row.querySelector('.access-revoke');
-      if(revoke) revoke.onclick = () => {
-        const updated = loadAccessCodes().map(x => x.code === item.code ? {...x, active:false} : x);
-        saveAccessCodes(updated);
-        renderAccessPanel();
-      };
-      listEl.appendChild(row);
-    });
-  }
-}
-function openAccessPanel(){
-  if(!isHost){
-    showErrorInCall('Somente o anfitrião pode abrir o controle de acesso.');
-    return;
-  }
-  renderAccessPanel();
-  $('accessPanel')?.classList.add('active');
-}
-function closeAccessPanel(){ $('accessPanel')?.classList.remove('active'); }
-function initAccessPanel(){
-  requireAccess = loadRequireAccess();
-  $('accessMenuBtn')?.addEventListener('click', () => {
-    if(window.matchMedia('(pointer: coarse)').matches){
-      $('settingsMenu')?.classList.remove('active');
-    }
-    openAccessPanel();
-  });
-  $('closeAccessPanel')?.addEventListener('click', closeAccessPanel);
-  $('requireAccessToggle')?.addEventListener('change', e => {
-    saveRequireAccess(e.target.checked);
-    renderAccessPanel();
-  });
-  $('generateAccessBtn')?.addEventListener('click', () => {
-    const code = generateAccessCode();
-    const label = $('accessLabelInput')?.value.trim().slice(0,24) || '';
-    const list = loadAccessCodes();
-    list.unshift({code, label, active:true, createdAt:Date.now()});
-    saveAccessCodes(list);
-    if($('accessLabelInput')) $('accessLabelInput').value = '';
-    const current = $('accessCurrent');
-    if(current){
-      current.innerHTML = `<div class="access-sub">Novo código — envie para a pessoa:</div><div class="access-code">${code}</div>`;
-      current.classList.add('active');
-    }
-    renderAccessPanel();
-  });
-  renderAccessPanel();
-}
-initAccessPanel();
 
 // ---------- Reentrada na última sala ----------
 const ROOM_STATE_KEY = 'statz_last_room';
@@ -1766,10 +1612,6 @@ async function reconnectToSavedRoom(){
   $('resumeBtn').disabled = true;
   $('resumeBtn').textContent = 'Reconectando…';
   $('codeInput').value = saved.code;
-  try{
-    pendingAccessCode = localStorage.getItem(ACCESS_LAST_KEY) || '';
-    if($('accessCodeInput')) $('accessCodeInput').value = pendingAccessCode;
-  }catch(e){}
 
   try{ peer?.destroy(); }catch(e){}
   peer = null;
@@ -1787,10 +1629,6 @@ $('forgetRoomBtn').onclick = () => {
   $('resumeRoom').style.display = 'none';
 };
 
-try{
-  const savedAccess = localStorage.getItem(ACCESS_LAST_KEY) || '';
-  if($('accessCodeInput')) $('accessCodeInput').value = savedAccess;
-}catch(e){}
 renderResumeRoom();
 
 async function createRoom(requestedCode = null, reconnecting = false){
@@ -1860,7 +1698,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
   });
 }
 
-async function joinRoom(code, reconnecting = false, accessCode = null){
+async function joinRoom(code, reconnecting = false){
   errorMsg.style.display = 'none';
   saveProfile();
   $('joinBtn').disabled = true;
@@ -1875,10 +1713,6 @@ async function joinRoom(code, reconnecting = false, accessCode = null){
   }
 
   roomCode = code.trim().replace(/\D/g,'').slice(0,3);
-  pendingAccessCode = normalizeAccessCode(accessCode ?? $('accessCodeInput')?.value ?? '');
-  if(pendingAccessCode) {
-    try{ localStorage.setItem(ACCESS_LAST_KEY, pendingAccessCode); }catch(e){}
-  }
   isHost = false;
   saveRoomState(roomCode, false);
   const hostId = ROOM_PREFIX + roomCode;
@@ -1889,17 +1723,13 @@ async function joinRoom(code, reconnecting = false, accessCode = null){
     enterCallUI();
     setMicButton();
     const conn = peer.connect(hostId, { reliable: true });
-    wireDataConn(conn, { guestHost: true });
+    wireDataConn(conn);
     conn.on('open', () => {
-      conn.send({
-        type: 'access-request',
-        accessCode: pendingAccessCode,
-        name: myProfile.name || 'Participante'
-      });
+      conn.send({ type: 'hello' });
       sendProfile(conn);
     });
     conn.on('error', () => showErrorInCall('Não achei essa sala. Confere o código com a galera.'));
-    // A chamada só começa depois de receber access-ok do anfitrião.
+    callPeer(hostId);
   });
   peer.on('connection', conn => wireDataConn(conn));
   peer.on('call', call => {
@@ -1931,7 +1761,7 @@ $('codeInput').addEventListener('input', () => {
   $('codeInput').value = $('codeInput').value.replace(/\D/g,'').slice(0,3);
 });
 
-$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim(), false, $('accessCodeInput').value.trim());
+$('joinBtn').onclick = () => joinRoom($('codeInput').value.trim());
 
 $('micBtn').onclick = () => {
   ensureAudioCtx();
@@ -2015,20 +1845,6 @@ $('shareBtn').onclick = async () => {
         screenMixedAudioStream = null;
       }
 
-      for(const sender of senders){
-        await sender.replaceTrack(screenTrack);
-        await applyQuality(sender);
-      }
-
-      const audioForCall = screenMixedAudioStream?.getAudioTracks()[0] || localStream?.getAudioTracks()[0];
-      if(audioForCall){
-        peers.forEach(entry => {
-          if(!entry.call) return;
-          const aSender = entry.call.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'audio');
-          if(aSender) aSender.replaceTrack(audioForCall).catch(()=>{});
-        });
-      }
-
       try{ await screenTrack.applyConstraints({ frameRate: { ideal: q.frameRate, max: q.frameRate } }); }catch(e){}
       $('myVideo').srcObject = screenStream;
       $('myVideo').muted = true;
@@ -2038,6 +1854,9 @@ $('shareBtn').onclick = async () => {
       $('myEmpty').style.display = 'none';
       broadcastCamState();
       screenTrack.onended = () => stopSharing();
+
+      // sharing=true agora faz getCurrentTracks() retornar a tela.
+      await renegotiateAllCalls();
 
       if(screenAudioStream){
         showErrorInCall('Áudio ativado. Pra evitar eco, prefira compartilhar uma aba específica (não a tela toda).', 6000);
@@ -2070,20 +1889,6 @@ async function applyQuality(sender){
 }
 
 async function stopSharing(){
-  const senders = getVideoSenders();
-  for(const sender of senders){
-    if(cameraTrack) await sender.replaceTrack(cameraTrack);
-  }
-
-  const micTrack = localStream ? localStream.getAudioTracks()[0] : null;
-  if(micTrack){
-    peers.forEach(entry => {
-      if(!entry.call) return;
-      const aSender = entry.call.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'audio');
-      if(aSender) aSender.replaceTrack(micTrack).catch(()=>{});
-    });
-  }
-
   if(screenAudioContext){
     try{ screenAudioContext.close(); }catch(e){}
   }
@@ -2106,6 +1911,9 @@ async function stopSharing(){
   $('shareBtn').classList.remove('active');
   updateCamUI();
   broadcastCamState();
+
+  // Depois de parar, recria as conexões para todos receberem a câmera.
+  await renegotiateAllCalls();
 }
 
 function showErrorInCall(msg, duration = 3000){
