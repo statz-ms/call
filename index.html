@@ -461,6 +461,13 @@
   }
   .native-audio-status.active{color:#8bc48b}
   .native-audio-status.error{color:#e07070}
+.native-audio-debug{display:none;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#111;font:11px/1.45 'JetBrains Mono',monospace}
+.native-audio-debug.show{display:block}
+.native-audio-debug-title{font-family:'Inter',sans-serif;font-weight:700;color:var(--text);margin-bottom:8px}
+.native-audio-meter-row{display:grid;grid-template-columns:58px 1fr 42px;gap:7px;align-items:center;margin:5px 0}
+.native-audio-meter{height:7px;background:#2a2a2a;border-radius:999px;overflow:hidden}
+.native-audio-meter>i{display:block;height:100%;width:0%;background:var(--ok);transition:width .08s linear}
+.native-audio-debug-meta{margin-top:8px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
 
 </style>
 <style>
@@ -948,6 +955,10 @@ let nativeAppRawSource = null;
 let nativeAppMicGain = null;
 let nativeAppGameGain = null;
 let nativeAppProcessorReady = false;
+let nativeRawAnalyser=null,nativeMixAnalyser=null,nativeSendAnalyser=null;
+let nativeMixDebugSource=null,nativeSendDebugSource=null,nativeDebugRaf=0;
+let nativeIpcPackets=0,nativeIpcBytes=0,nativeIpcPacketsLast=0,nativeIpcBytesLast=0;
+let nativeDebugLastTick=performance.now(),nativeLastPayloadType='nenhum';
 let speakerMode = 'speaker'; // compatibilidade com o botão antigo
 let localAnalyser = null;
 let localAnalyserData = null;
@@ -1171,6 +1182,7 @@ async function replaceOutgoingVideoTrack(track){
     if(sender) jobs.push(sender.replaceTrack(track).catch(()=>{}));
   });
   await Promise.all(jobs);
+  if(nativeAppAudioActive){rebuildNativeSendDebug();startNativeAudioDebug();}
 }
 
 async function enableCamera(){
@@ -2345,6 +2357,31 @@ document.querySelectorAll('.quality-opt').forEach(btn => {
 
 
 // ---------- Áudio nativo por aplicativo (SquadCall Desktop / Windows) ----------
+function nativeMakeAnalyser(ctx){const a=ctx.createAnalyser();a.fftSize=1024;a.smoothingTimeConstant=.15;return a}
+function nativeAnalyserPct(a){if(!a)return 0;const d=new Float32Array(a.fftSize);a.getFloatTimeDomainData(d);let s=0;for(let i=0;i<d.length;i++)s+=d[i]*d[i];const rms=Math.sqrt(s/d.length);return Math.max(0,Math.min(100,Math.round(rms/.25*100)))}
+function nativeSetMeter(barId,pctId,p){const b=$(barId),t=$(pctId);if(b)b.style.width=p+'%';if(t)t.textContent=p+'%'}
+function stopNativeAudioDebug(){
+  if(nativeDebugRaf)cancelAnimationFrame(nativeDebugRaf);nativeDebugRaf=0;
+  for(const n of [nativeRawAnalyser,nativeMixAnalyser,nativeSendAnalyser,nativeMixDebugSource,nativeSendDebugSource]){try{n?.disconnect?.()}catch(e){}}
+  nativeRawAnalyser=nativeMixAnalyser=nativeSendAnalyser=null;nativeMixDebugSource=nativeSendDebugSource=null;
+  nativeSetMeter('nativeRawMeter','nativeRawPct',0);nativeSetMeter('nativeMixMeter','nativeMixPct',0);nativeSetMeter('nativeSendMeter','nativeSendPct',0);
+}
+function rebuildNativeSendDebug(){
+  const ctx=ensureAudioCtx();try{nativeSendDebugSource?.disconnect?.()}catch(e){}try{nativeSendAnalyser?.disconnect?.()}catch(e){}
+  nativeSendDebugSource=nativeSendAnalyser=null;const track=getCurrentOutgoingAudioTrack();
+  if(track){try{nativeSendAnalyser=nativeMakeAnalyser(ctx);nativeSendDebugSource=ctx.createMediaStreamSource(new MediaStream([track]));nativeSendDebugSource.connect(nativeSendAnalyser)}catch(e){}}
+}
+function startNativeAudioDebug(){
+  $('nativeAudioDebug')?.classList.add('show');if(nativeDebugRaf)return;
+  nativeDebugLastTick=performance.now();nativeIpcPacketsLast=nativeIpcPackets;nativeIpcBytesLast=nativeIpcBytes;
+  const loop=()=>{const raw=nativeAnalyserPct(nativeRawAnalyser),mix=nativeAnalyserPct(nativeMixAnalyser),send=nativeAnalyserPct(nativeSendAnalyser);
+    nativeSetMeter('nativeRawMeter','nativeRawPct',raw);nativeSetMeter('nativeMixMeter','nativeMixPct',mix);nativeSetMeter('nativeSendMeter','nativeSendPct',send);
+    const now=performance.now();if(now-nativeDebugLastTick>=1000){const sec=(now-nativeDebugLastTick)/1000,pps=Math.round((nativeIpcPackets-nativeIpcPacketsLast)/sec),kbps=Math.round(((nativeIpcBytes-nativeIpcBytesLast)*8/1000)/sec);
+      nativeIpcPacketsLast=nativeIpcPackets;nativeIpcBytesLast=nativeIpcBytes;nativeDebugLastTick=now;
+      const out=getCurrentOutgoingAudioTrack(),senderTracks=[];peers.forEach(entry=>{const s=entry?.call?.peerConnection?.getSenders?.().find(x=>x.track?.kind==='audio');if(s?.track)senderTracks.push(`${s.track.id.slice(0,8)}:${s.track.readyState}:${s.track.enabled?'on':'off'}`)});
+      const meta=$('nativeAudioDebugMeta');if(meta)meta.textContent=`IPC: ${pps} pacotes/s · ${kbps} kbps · payload ${nativeLastPayloadType}\nTrack escolhido: ${out?out.id.slice(0,8)+' · '+out.readyState+' · '+(out.enabled?'enabled':'disabled'):'nenhum'}\nSenders WebRTC: ${senderTracks.length?senderTracks.join(', '):'nenhum sender de áudio'}`;
+    }nativeDebugRaf=requestAnimationFrame(loop)};nativeDebugRaf=requestAnimationFrame(loop);
+}
 function setNativeAudioStatus(text, kind=''){
   const el = $('nativeAppAudioStatus');
   if(!el) return;
@@ -2419,20 +2456,24 @@ function disconnectNativeMixNodes(){
 
 function rebuildNativeAppMix(){
   if(!nativeAppAudioActive || !nativeAppRawDestination || !localStream) return;
-  const ctx = ensureAudioCtx();
-  disconnectNativeMixNodes();
+  const ctx=ensureAudioCtx();disconnectNativeMixNodes();
+  try{nativeMixDebugSource?.disconnect?.()}catch(e){}try{nativeMixAnalyser?.disconnect?.()}catch(e){}
+  nativeMixDebugSource=nativeMixAnalyser=null;
+  nativeAppMixDestination=ctx.createMediaStreamDestination();
+  nativeAppMicSource=ctx.createMediaStreamSource(localStream);
+  nativeAppRawSource=ctx.createMediaStreamSource(nativeAppRawDestination.stream);
+  nativeAppMicGain=ctx.createGain();nativeAppGameGain=ctx.createGain();
+  nativeAppMicGain.gain.value=micOn?1:0;nativeAppGameGain.gain.value=1;
 
-  nativeAppMixDestination = ctx.createMediaStreamDestination();
-  nativeAppMicSource = ctx.createMediaStreamSource(localStream);
-  nativeAppRawSource = ctx.createMediaStreamSource(nativeAppRawDestination.stream);
-  nativeAppMicGain = ctx.createGain();
-  nativeAppGameGain = ctx.createGain();
-  nativeAppMicGain.gain.value = micOn ? 1 : 0;
-  nativeAppGameGain.gain.value = 1;
+  nativeRawAnalyser=nativeMakeAnalyser(ctx);
+  nativeAppRawSource.connect(nativeRawAnalyser);
 
   nativeAppMicSource.connect(nativeAppMicGain).connect(nativeAppMixDestination);
   nativeAppRawSource.connect(nativeAppGameGain).connect(nativeAppMixDestination);
-  nativeAppMixedAudioStream = nativeAppMixDestination.stream;
+  nativeAppMixedAudioStream=nativeAppMixDestination.stream;
+
+  try{nativeMixAnalyser=nativeMakeAnalyser(ctx);nativeMixDebugSource=ctx.createMediaStreamSource(nativeAppMixedAudioStream);nativeMixDebugSource.connect(nativeMixAnalyser)}catch(e){}
+  rebuildNativeSendDebug();startNativeAudioDebug();
 }
 
 async function refreshNativeAudioApps(){
@@ -2478,6 +2519,8 @@ async function stopNativeAppAudio({silent=false}={}){
   nativeAppRawDestination = null;
   nativeAppMixedAudioStream = null;
   nativeAppMixDestination = null;
+  stopNativeAudioDebug();
+  $('nativeAudioDebug')?.classList.remove('show');
 
   const sel = $('nativeAppAudioProcess');
   if(sel) sel.value = '';
@@ -2515,20 +2558,26 @@ async function startNativeAppAudio(pid){
   nativeAppAudioChannel = new Channel();
   nativeAppAudioChannel.onmessage = (payload) => {
     try{
-      let buffer = payload;
+      let buffer=payload;
+      nativeLastPayloadType=Object.prototype.toString.call(payload).replace('[object ','').replace(']','');
       if(payload instanceof Uint8Array){
-        buffer = payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength);
+        buffer=payload.buffer.slice(payload.byteOffset,payload.byteOffset+payload.byteLength);
       }else if(Array.isArray(payload)){
-        buffer = new Uint8Array(payload).buffer;
+        buffer=new Uint8Array(payload).buffer;
+      }else if(payload?.data && Array.isArray(payload.data)){
+        buffer=new Uint8Array(payload.data).buffer;
+        nativeLastPayloadType+='→data[]';
       }
       if(buffer instanceof ArrayBuffer){
-        // Copia antes de transferir para não depender do buffer interno do IPC.
-        const copy = buffer.slice(0);
-        nativeAppAudioWorklet?.port?.postMessage(copy, [copy]);
+        nativeIpcPackets++;nativeIpcBytes+=buffer.byteLength;
+        const copy=buffer.slice(0);
+        nativeAppAudioWorklet?.port?.postMessage(copy,[copy]);
       }
-    }catch(e){}
+    }catch(e){nativeLastPayloadType='ERRO: '+String(e)}
   };
 
+  nativeIpcPackets=0;nativeIpcBytes=0;nativeIpcPacketsLast=0;nativeIpcBytesLast=0;
+  nativeLastPayloadType='aguardando';startNativeAudioDebug();
   setNativeAudioStatus('Iniciando captura isolada…');
   try{
     const format = await window.__TAURI__.core.invoke('start_app_audio', {
