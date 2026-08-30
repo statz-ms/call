@@ -793,6 +793,22 @@ function mediaErrorMessage(e){
   return 'Não consegui acessar sua câmera/microfone. Verifica as permissões do navegador e tenta de novo.';
 }
 
+// Cria uma pista de vídeo "vazia" (quadro preto) pra quem não tem câmera.
+// Sem isso, a conexão WebRTC nunca reserva espaço pra vídeo logo de cara,
+// e depois não tem como encaixar a tela compartilhada nessa conexão específica
+// (o áudio passa por outro caminho, por isso só o som funcionava).
+function createBlackVideoTrack(width = 320, height = 240){
+  try{
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+    const stream = canvas.captureStream(5);
+    return stream.getVideoTracks()[0] || null;
+  }catch(e){ return null; }
+}
+
 async function getLocalStream(){
   if(localStream) return localStream;
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -819,6 +835,8 @@ async function getLocalStream(){
     if(e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError' || e.name === 'OverconstrainedError'){
       localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
       noCameraDevice = true;
+      const blackTrack = createBlackVideoTrack();
+      if(blackTrack) localStream.addTrack(blackTrack);
     } else {
       throw e;
     }
@@ -1962,6 +1980,6 @@ $('hangupBtn').onclick = () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v2</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v3</div>
 </body>
 </html>
