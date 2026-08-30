@@ -7,9 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"><script>
-$('logoutBtn')?.addEventListener('click',()=>{clearSession();location.reload();});
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <style>
   :root{
     --bg: #121212;
@@ -626,29 +624,34 @@ $('logoutBtn')?.addEventListener('click',()=>{clearSession();location.reload();}
 <script>
 
 // ---------- Login / cadastro / sessão offline ----------
-const AUTH_API = window.SQUADCALL_AUTH_API || 'http://localhost:8787';
+const AUTH_API = window.SQUADCALL_AUTH_API || 'https://discovery-plains-convicted-honolulu.trycloudflare.com';
 const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
-const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
-757lqL9AunzrpvxrjsB8IfC21542d6gnGJmm+HrABZ1t2FlGVcxW0xmk2HhXlpMF
-GzcJsSOCg5uh15U/oiEQCtoZfrJNBHrJmFh7Eo70Qp7kNzh+Ijv8meSd+7QBhtr9
-junc3059we4dj10LJ9LdOyqlqIKWUuRYUAh+iYxCwDqZ7CdaAm1F5i0BgiGeNG2o
-fRb4x6RjvRznCAkUpC+Zc1wBfdcJcJwccjygns6Pr2yh7ZE6Zy2lBY8uFo0ARDSE
-tSaUN0vWnAlbXEq7F8oVehCPtMCreWLIjSLLvrf1Ct/aVGLiSRQ/hlq2oJhRRB9y
-awIDAQAB
------END PUBLIC KEY-----`;
+const AUTH_PUBLIC_KEY_STORAGE = 'squadcall_auth_public_key_v1';
 let authUser = null;
 function b64uToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const raw=atob(s);return Uint8Array.from(raw,c=>c.charCodeAt(0));}
 function decodeJwt(token){const p=token.split('.');if(p.length!==3)throw new Error('Token inválido');const payload=JSON.parse(new TextDecoder().decode(b64uToBytes(p[1])));return {p,payload};}
-async function verifySessionToken(token){try{const {p,payload}=decodeJwt(token);if(payload.exp && Date.now()/1000>=payload.exp)return false;const b64=AUTH_PUBLIC_KEY_PEM.replace(/-----.*?-----/g,'').replace(/\s/g,'');const key=await crypto.subtle.importKey('spki',b64uToBytes(b64),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);return await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},key,b64uToBytes(p[2]),new TextEncoder().encode(p[0]+'.'+p[1]));}catch(e){return false;}}
+async function fetchPublicKeyPem(){
+  try{
+    const r=await fetch(AUTH_API.replace(/\/$/,'')+'/api/auth/public-key',{cache:'no-store'});
+    if(!r.ok) throw new Error('public-key');
+    const d=await r.json();
+    if(!d.public_key) throw new Error('public-key');
+    localStorage.setItem(AUTH_PUBLIC_KEY_STORAGE,d.public_key);
+    return d.public_key;
+  }catch(e){
+    try{return localStorage.getItem(AUTH_PUBLIC_KEY_STORAGE)||'';}catch(_){return '';}
+  }
+}
+async function verifySessionToken(token){try{const {p,payload}=decodeJwt(token);if(payload.exp && Date.now()/1000>=payload.exp)return false;const pem=await fetchPublicKeyPem();if(!pem)return false;const b64=pem.replace(/-----.*?-----/g,'').replace(/\s/g,'');const key=await crypto.subtle.importKey('spki',b64uToBytes(b64),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);return await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},key,b64uToBytes(p[2]),new TextEncoder().encode(p[0]+'.'+p[1]));}catch(e){return false;}}
 function getSession(){try{return localStorage.getItem(AUTH_TOKEN_KEY)||''}catch(e){return ''}}
 function saveSession(token,user){localStorage.setItem(AUTH_TOKEN_KEY,token);authUser=user;}
 function clearSession(){localStorage.removeItem(AUTH_TOKEN_KEY);authUser=null;}
+$('logoutBtn').onclick=()=>{clearSession();location.reload();};
 async function authApi(path,options={}){const h={'Content-Type':'application/json',...(options.headers||{})};const token=getSession();if(token)h.Authorization='Bearer '+token;const r=await fetch(AUTH_API.replace(/\/$/,'')+path,{...options,headers:h});let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Não foi possível falar com a API.');return d;}
 function authMessage(text,ok=false){const e=$('authMsg');e.textContent=text;e.className='auth-msg show '+(ok?'ok':'error');}
 function authTab(which){$('authLoginTab').classList.toggle('active',which==='login');$('authRegisterTab').classList.toggle('active',which==='register');$('authLoginPane').classList.toggle('active',which==='login');$('authRegisterPane').classList.toggle('active',which==='register');$('authMsg').className='auth-msg';}
 $('authLoginTab').onclick=()=>authTab('login');$('authRegisterTab').onclick=()=>authTab('register');
-$('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
+$('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});await fetchPublicKeyPem();saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
 $('authRegBtn').onclick=async()=>{try{const username=$('authRegUser').value.trim(),name=$('authRegName').value.trim()||username,password=$('authRegPass').value,p2=$('authRegPass2').value,key=$('authRegKey').value.trim().toUpperCase();if(!username||!password||!key)throw new Error('Preencha usuário, senha e KEY.');if(password!==p2)throw new Error('As senhas não coincidem.');await authApi('/api/auth/register',{method:'POST',body:JSON.stringify({username,display_name:name,password,invite_key:key})});authTab('login');$('authLoginUser').value=username;authMessage('Conta criada. Aguarde sua aprovação pelo administrador.',true);}catch(e){authMessage(e.message);}};
 function showAuthenticated(){$('authGate').classList.add('hidden');if(authUser?.role==='admin')$('adminOpenBtn').classList.add('show');}
 async function bootAuth(){const token=getSession();if(!token)return;const ok=await verifySessionToken(token);if(!ok){clearSession();return;}try{const d=decodeJwt(token);authUser={id:d.payload.sub,username:d.payload.username,display_name:d.payload.name,role:d.payload.role};showAuthenticated();}catch(e){clearSession();}}
