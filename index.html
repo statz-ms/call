@@ -177,6 +177,19 @@
     background: var(--surface-2); border:1px solid var(--line);
     padding:5px 14px; border-radius:999px; font-size:12.5px; color:var(--muted);
   }
+  .route-badge{
+    position:absolute; right:72px; top:50%; transform:translateY(-50%);
+    display:flex; align-items:center; gap:7px;
+    padding:5px 10px; border:1px solid var(--line); border-radius:999px;
+    background:rgba(20,20,20,.72); color:var(--muted); font-size:11.5px;
+    white-space:nowrap;
+  }
+  .route-badge::before{ content:''; width:7px; height:7px; border-radius:50%; background:#777; }
+  .route-badge.direct{ color:var(--ok); border-color:rgba(70,190,120,.35); }
+  .route-badge.direct::before{ background:var(--ok); }
+  .route-badge.turn{ color:#f0b45a; border-color:rgba(240,180,90,.4); }
+  .route-badge.turn::before{ background:#f0b45a; box-shadow:0 0 8px rgba(240,180,90,.45); }
+  @media (max-width:680px){ .route-badge{ right:68px; font-size:0; padding:8px; } }
 
   .video-grid{
     flex:1; display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -698,6 +711,46 @@ body{
 #logoutFab.show{display:block;}
 #logoutFab:hover{border-color:var(--accent); color:var(--accent);}
 body.in-call #logoutFab{display:none!important;}
+.admin-launch{
+  top:16px!important; left:auto!important; right:128px!important;
+  display:none; align-items:center; gap:8px; padding:9px 13px!important;
+  background:linear-gradient(135deg,rgba(155,108,255,.22),rgba(101,70,166,.13))!important;
+  border-color:rgba(169,120,255,.55)!important; color:#d8c5ff!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.3);
+}
+.admin-launch.show{display:flex!important}.admin-launch:hover{transform:translateY(-1px);border-color:#b995ff!important}
+body.in-call .admin-launch{display:none!important}
+#adminModal{background:rgba(6,4,10,.84)!important;backdrop-filter:blur(14px)!important}
+#adminModal .admin-box{
+  width:min(1040px,96vw);max-height:90vh;padding:0;overflow:hidden;
+  background:linear-gradient(145deg,#171020,#0f0b16);border:1px solid #3d2d52;
+  box-shadow:0 35px 100px rgba(0,0,0,.76);
+}
+.admin-head{padding:22px 24px;border-bottom:1px solid #322441;background:rgba(155,108,255,.055)}
+.admin-head h2{font-size:22px!important;letter-spacing:-.02em}.admin-head .admin-meta{font-size:11px;color:#9f93ad}
+.admin-close{width:36px;height:36px;border:1px solid #3b2c4c!important;border-radius:10px;background:#20172b!important;line-height:1}
+.admin-content{padding:18px 20px 22px;overflow:auto;max-height:calc(90vh - 82px)}
+.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.admin-stat{padding:14px 16px;border:1px solid #352746;border-radius:13px;background:rgba(32,23,44,.72)}
+.admin-stat strong{display:block;font-size:22px;color:#c7adff}.admin-stat span{font-size:10px;color:#8f849f;text-transform:uppercase;letter-spacing:.08em}
+.admin-grid{display:grid;grid-template-columns:minmax(330px,.9fr) minmax(420px,1.3fr);gap:14px;align-items:start}
+#adminModal .admin-section{margin:0;padding:16px;border-radius:14px;background:rgba(27,20,37,.8)}
+#adminModal .admin-section h3{font-size:13px;margin:0}.admin-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.admin-count{font-size:10px;color:#a995bf;background:#251a33;border:1px solid #3b2b4e;border-radius:999px;padding:4px 8px}
+.admin-create{display:grid!important;grid-template-columns:minmax(0,1fr) 104px;gap:8px!important}
+.admin-field{display:flex;flex-direction:column;gap:5px}.admin-field label{margin:0;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#8f849f}
+.admin-create input,.admin-create select{width:100%;min-width:0;box-sizing:border-box;background:#21192d;color:#f3effa;border:1px solid #3a2c4e;border-radius:9px;padding:9px;font:inherit;font-size:11px}
+.admin-create select:focus,.admin-create input:focus{outline:2px solid rgba(155,108,255,.35);border-color:#8b62d8}
+.admin-create .admin-field:nth-child(3){grid-column:1}.admin-create .admin-btn{grid-column:2;align-self:end;width:100%;height:36px;white-space:nowrap}
+.admin-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+#adminModal .admin-row{border:1px solid #30223f!important;border-radius:11px;padding:11px 12px!important;background:rgba(13,9,19,.5);align-items:center}
+.admin-name{font-size:12px!important}.admin-meta{color:#91869f!important;line-height:1.45}.admin-key{font-size:12px!important;word-break:break-all}
+.admin-status{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800;margin-left:6px}
+.admin-status.ok{background:rgba(80,190,125,.13);color:#8de3ae}.admin-status.warn{background:rgba(230,174,76,.13);color:#edc06e}.admin-status.bad{background:rgba(228,95,120,.13);color:#ff91a5}
+.admin-btn{transition:.15s ease}.admin-btn:hover{border-color:#8a62cc;transform:translateY(-1px)}.admin-btn.danger{border-color:rgba(228,95,120,.35);background:rgba(228,95,120,.08)}
+.admin-empty{padding:22px;text-align:center;color:#766d82;font-size:11px}
+@media(max-width:850px){.admin-grid{grid-template-columns:1fr}.admin-create{grid-template-columns:minmax(0,1fr) 104px}.admin-launch{right:116px!important}}
+@media(max-width:600px){.admin-stats{grid-template-columns:1fr}.admin-create{grid-template-columns:1fr!important}.admin-create .admin-btn{width:100%}.admin-launch{right:106px!important;font-size:0}.admin-launch::after{content:'👑';font-size:14px}}
 .mic-status-icon{
   display:none; align-items:center; justify-content:center; flex:0 0 auto;
   width:16px; height:16px; color:var(--danger); margin-left:2px;
@@ -734,12 +787,17 @@ body.in-call #logoutFab{display:none!important;}
     </div>
   </div>
 </div>
-<button id="adminOpenBtn">👑 Admin</button>
+<button id="adminOpenBtn" class="admin-launch" type="button">👑 Painel admin</button>
 <button id="logoutFab" type="button">Sair da conta</button>
 <div id="adminModal"><div class="admin-box">
   <div class="admin-head"><div><h2>Painel administrativo</h2><div class="admin-meta">Gere KEYs e aprove ou bloqueie usuários.</div></div><button class="admin-close" id="adminClose">×</button></div>
-  <div class="admin-section"><h3>🔑 Gerar KEY</h3><div class="admin-create"><input id="newKeyLabel" placeholder="Descrição (opcional)"><input id="newKeyUses" type="number" min="1" max="100" value="1" style="max-width:100px"><button class="admin-btn primary" id="newKeyBtn">+ Gerar</button></div><div id="adminKeys" style="margin-top:10px"></div></div>
-  <div class="admin-section"><h3>👤 Usuários</h3><div id="adminUsers"></div></div>
+  <div class="admin-content">
+    <div class="admin-stats" id="adminStats"></div>
+    <div class="admin-grid">
+      <div class="admin-section"><div class="admin-section-head"><h3>🔑 Licenças de acesso</h3><span class="admin-count" id="keyCount">0 keys</span></div><div class="admin-create"><div class="admin-field"><label>Descrição</label><input id="newKeyLabel" placeholder="Ex.: João / teste"></div><div class="admin-field"><label>Usos</label><input id="newKeyUses" type="number" min="1" max="100" value="1"></div><div class="admin-field"><label>Duração</label><select id="newKeyDuration"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">1 ano</option><option value="0">Vitalícia</option></select></div><button class="admin-btn primary" id="newKeyBtn">+ Gerar KEY</button></div><div id="adminKeys" class="admin-list"></div></div>
+      <div class="admin-section"><div class="admin-section-head"><h3>👤 Contas</h3><span class="admin-count" id="userCount">0 usuários</span></div><div id="adminUsers" class="admin-list"></div></div>
+    </div>
+  </div>
 </div></div>
 
 <!-- LOBBY -->
@@ -798,6 +856,7 @@ body.in-call #logoutFab{display:none!important;}
   <div class="call-header">
     <div class="call-title"><span class="pulse"></span><span id="connStatus">conectando…</span></div>
     <div class="mono" id="roomBadge"></div>
+    <div class="route-badge" id="routeBadge" title="A rota será identificada quando alguém se conectar">Verificando conexão…</div>
   </div>
 
   <div class="video-grid" id="videoGrid">
@@ -885,16 +944,16 @@ body.in-call #logoutFab{display:none!important;}
 const $ = id => document.getElementById(id);
 
 // ---------- Login / cadastro / sessão offline ----------
-const AUTH_API = window.SQUADCALL_AUTH_API || 'https://characterization-len-benjamin-scroll.trycloudflare.com';
+const AUTH_API = window.SQUADCALL_AUTH_API || 'https://fork-filter-envelope-expo.trycloudflare.com';
 const AUTH_TOKEN_KEY = 'squadcall_signed_session_v1';
 const AUTH_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnnzDu3xm/oJt256C7uzL
-757lqL9AunzrpvxrjsB8IfC21542d6gnGJmm+HrABZ1t2FlGVcxW0xmk2HhXlpMF
-GzcJsSOCg5uh15U/oiEQCtoZfrJNBHrJmFh7Eo70Qp7kNzh+Ijv8meSd+7QBhtr9
-junc3059we4dj10LJ9LdOyqlqIKWUuRYUAh+iYxCwDqZ7CdaAm1F5i0BgiGeNG2o
-fRb4x6RjvRznCAkUpC+Zc1wBfdcJcJwccjygns6Pr2yh7ZE6Zy2lBY8uFo0ARDSE
-tSaUN0vWnAlbXEq7F8oVehCPtMCreWLIjSLLvrf1Ct/aVGLiSRQ/hlq2oJhRRB9y
-awIDAQAB
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA19wjirkf9cU8PeeeeP82
+avuEdoXiCTyY8uNeznPR721WsxSadDNOeELAdYs7QUt8aglyGCCnifWY8vxSJxb0
+nCIcPdQ165Lf5cSFisGt9ifG0PzmD6ZXThPP3MYew9leEpVkLNByoeevNLcAnqvN
+z5QJBwcHGj+AOAiXNzSwpPWruFKo9eEyrMVAR2sKGzlpplikcjQOnh/3lFPSYVC1
+dtLhWLoRgeQVW9BYc1yzD9iN+JWe+MLcbueldZp1knBnYbRGFtRpZWxC05ar2mmx
+VBupdaBWz+gF3AOdcaXz7eWbc55f6wjgdsQByAJXN8UiRa0+REZNDUngkCF0iMd/
+gwIDAQAB
 -----END PUBLIC KEY-----`;
 let authUser = null;
 function b64uToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const raw=atob(s);return Uint8Array.from(raw,c=>c.charCodeAt(0));}
@@ -947,7 +1006,9 @@ async function authApi(path,options={}){
         `Tempo: ${elapsed} ms\n`+
         `Resposta: ${String(serverMessage).slice(0,1200)}`
       );
-      throw new Error((d&&d.error)||`API respondeu HTTP ${r.status}. Veja o diagnóstico abaixo.`);
+      const requestError=new Error((d&&d.error)||`API respondeu HTTP ${r.status}. Veja o diagnóstico abaixo.`);
+      requestError.status=r.status;
+      throw requestError;
     }
 
     console.log(`[SquadCall AUTH] OK ${r.status} em ${elapsed}ms`);
@@ -975,31 +1036,80 @@ $('authLoginTab').onclick=()=>window.authTab('login');$('authRegisterTab').oncli
 $('authLoginBtn').onclick=async()=>{try{const username=$('authLoginUser').value.trim(),password=$('authLoginPass').value;if(!username||!password)throw new Error('Preencha usuário e senha.');const d=await authApi('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});saveSession(d.token,d.user);showAuthenticated();}catch(e){authMessage(e.message);}};
 $('authRegBtn').onclick=async()=>{try{const username=$('authRegUser').value.trim(),name=$('authRegName').value.trim()||username,password=$('authRegPass').value,p2=$('authRegPass2').value,key=$('authRegKey').value.trim().toUpperCase();if(!username||!password||!key)throw new Error('Preencha usuário, senha e KEY.');if(password!==p2)throw new Error('As senhas não coincidem.');await authApi('/api/auth/register',{method:'POST',body:JSON.stringify({username,display_name:name,password,invite_key:key})});authTab('login');$('authLoginUser').value=username;authMessage('Conta criada. Aguarde sua aprovação pelo administrador.',true);}catch(e){authMessage(e.message);}};
 function showAuthenticated(){$('authGate').classList.add('hidden');$('logoutFab')?.classList.add('show');if(authUser?.role==='admin')$('adminOpenBtn').classList.add('show');}
-async function bootAuth(){const token=getSession();if(!token)return;const ok=await verifySessionToken(token);if(!ok){clearSession();return;}try{const d=decodeJwt(token);authUser={id:d.payload.sub,username:d.payload.username,display_name:d.payload.name,role:d.payload.role};showAuthenticated();}catch(e){clearSession();}}
+async function bootAuth(){const token=getSession();if(!token)return;const ok=await verifySessionToken(token);if(!ok){clearSession();return;}try{const d=await authApi('/api/auth/me');authUser=d.user;showAuthenticated();}catch(e){clearSession();}}
+setInterval(async()=>{if(!getSession())return;try{const d=await authApi('/api/auth/me');authUser=d.user;}catch(e){if(e.status===401||e.status===403){clearSession();location.reload();}}},60000);
 $('adminClose').onclick=()=>$('adminModal').classList.remove('active');$('adminOpenBtn').onclick=async()=>{$('adminModal').classList.add('active');await refreshAdminPanel();};
 function escA(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-async function refreshAdminPanel(){try{const [u,k]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys')]);$('adminUsers').innerHTML=(u.users||[]).map(x=>`<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span style="color:${x.approved&&x.active?'#8bc48b':'#e07070'}">${x.approved?(x.active?'🟢 aprovado':'🔴 bloqueado'):'🟡 aguardando'}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)}</div></div><div class="admin-actions">${!x.approved&&x.active?`<button class="admin-btn primary" onclick='approveUser(${JSON.stringify(String(x.id))})'>Aprovar</button>`:''}${x.approved&&x.active&&x.id!==authUser.id?`<button class="admin-btn danger" onclick='setUser(${JSON.stringify(String(x.id))},false)'>Bloquear</button>`:''}${!x.active?`<button class="admin-btn primary" onclick='setUser(${JSON.stringify(String(x.id))},true)'>Ativar</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick='deleteUser(${JSON.stringify(String(x.id))})'>Excluir</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhum usuário.</div>'; $('adminKeys').innerHTML=(k.keys||[]).map(x=>`<div class="admin-row"><div><div class="admin-key">${escA(x.key)}</div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${x.revoked?'🔴 revogada':'🟢 ativa'}</div></div><div class="admin-actions"><button class="admin-btn" onclick="copyKey('${escA(x.key)}')">Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick='revokeKey(${JSON.stringify(String(x.id))})'>Revogar</button>`:''}</div></div>`).join('')||'<div class="admin-meta">Nenhuma KEY.</div>';}catch(e){alert(e.message);}}
-window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({approved:true,active:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.setUser=async(id,active)=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({active})});await refreshAdminPanel();}catch(e){alert(e.message);}};window.deleteUser=async id=>{if(!confirm('Excluir usuário?'))return;try{await authApi('/api/admin/users/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.revokeKey=async id=>{if(!confirm('Revogar KEY?'))return;try{await authApi('/api/admin/invite-keys/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};window.copyKey=async k=>{try{await navigator.clipboard.writeText(k);alert('KEY copiada: '+k);}catch(e){alert(k);}};
-$('newKeyBtn').onclick=async()=>{try{const label=$('newKeyLabel').value.trim(),max_uses=Math.max(1,Math.min(100,Number($('newKeyUses').value)||1));await authApi('/api/admin/invite-keys',{method:'POST',body:JSON.stringify({label,max_uses})});$('newKeyLabel').value='';await refreshAdminPanel();}catch(e){alert(e.message);}};
+function adminDate(value){if(!value)return 'Vitalícia';const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});}
+function keyDuration(days){const n=Number(days)||0;if(!n)return 'Vitalícia';if(n===365)return '1 ano';return n+' dia'+(n===1?'':'s');}
+async function refreshAdminPanel(){
+  try{
+    const [u,k]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys')]);
+    const users=u.users||[],keys=k.keys||[];
+    const activeUsers=users.filter(x=>x.approved&&x.active&&!x.expired).length;
+    const pendingUsers=users.filter(x=>!x.approved&&x.active).length;
+    const activeKeys=keys.filter(x=>!x.revoked&&x.uses_left>0).length;
+    $('adminStats').innerHTML=`<div class="admin-stat"><strong>${activeUsers}</strong><span>Contas ativas</span></div><div class="admin-stat"><strong>${pendingUsers}</strong><span>Aguardando aprovação</span></div><div class="admin-stat"><strong>${activeKeys}</strong><span>KEYs disponíveis</span></div>`;
+    $('userCount').textContent=users.length+' usuário'+(users.length===1?'':'s');
+    $('keyCount').textContent=keys.length+' key'+(keys.length===1?'':'s');
+    $('adminUsers').innerHTML=users.map(x=>{
+      const status=!x.active?['Bloqueada','bad']:x.expired?['Expirada','bad']:!x.approved?['Aguardando','warn']:['Ativa','ok'];
+      const access=x.access_expires_at?'Expira em '+adminDate(x.access_expires_at):'Acesso vitalício';
+      const uid=JSON.stringify(String(x.id));
+      return `<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span class="admin-status ${status[1]}">${status[0]}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)} · ${access}</div></div><div class="admin-actions">${!x.approved?`<button class="admin-btn primary" onclick='approveUser(${uid})'>Aprovar</button>`:''}${x.id!==authUser.id?(x.active?`<button class="admin-btn danger" onclick='setUser(${uid},false)'>Bloquear</button>`:`<button class="admin-btn primary" onclick='setUser(${uid},true)'>Desbloquear</button>`):''}${x.role!=='admin'?`<button class="admin-btn" onclick='extendUser(${uid},30)'>+30 dias</button><button class="admin-btn" onclick='setLifetime(${uid})'>Vitalícia</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick='deleteUser(${uid})'>Excluir</button>`:''}</div></div>`;
+    }).join('')||'<div class="admin-empty">Nenhum usuário cadastrado.</div>';
+    $('adminKeys').innerHTML=keys.map(x=>{
+      const state=x.revoked?['Revogada','bad']:x.uses_left<=0?['Esgotada','warn']:['Ativa','ok'];
+      const kid=JSON.stringify(String(x.id));
+      return `<div class="admin-row"><div><div class="admin-key">${escA(x.key)} <span class="admin-status ${state[1]}">${state[0]}</span></div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${keyDuration(x.duration_days)} de acesso</div></div><div class="admin-actions"><button class="admin-btn" onclick='copyKey(${JSON.stringify(String(x.key))})'>Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick='revokeKey(${kid})'>Revogar</button>`:''}</div></div>`;
+    }).join('')||'<div class="admin-empty">Nenhuma KEY gerada.</div>';
+  }catch(e){alert(e.message);}
+}
+window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({approved:true,active:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.setUser=async(id,active)=>{if(!active&&!confirm('Bloquear esta conta imediatamente?'))return;try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({active})});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.extendUser=async(id,days)=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({extend_days:days})});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.setLifetime=async id=>{if(!confirm('Transformar esta conta em acesso vitalício?'))return;try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({lifetime:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.deleteUser=async id=>{if(!confirm('Excluir este usuário permanentemente?'))return;try{await authApi('/api/admin/users/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.revokeKey=async id=>{if(!confirm('Revogar esta KEY?'))return;try{await authApi('/api/admin/invite-keys/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.copyKey=async k=>{try{await navigator.clipboard.writeText(k);alert('KEY copiada: '+k);}catch(e){alert(k);}};
+$('newKeyBtn').onclick=async()=>{try{const label=$('newKeyLabel').value.trim(),max_uses=Math.max(1,Math.min(100,Number($('newKeyUses').value)||1)),duration_days=Number($('newKeyDuration').value);await authApi('/api/admin/invite-keys',{method:'POST',body:JSON.stringify({label,max_uses,duration_days})});$('newKeyLabel').value='';await refreshAdminPanel();}catch(e){alert(e.message);}};
 const doLogout=()=>{clearSession();location.reload();};$('logoutBtn')?.addEventListener('click',doLogout);$('logoutFab')?.addEventListener('click',doLogout);
 bootAuth();
 const ROOM_PREFIX = 'statz-';
 const PROFILE_KEY = 'statz_profile';
 
-// Servidores STUN/TURN: com só STUN, 2 pessoas costumam conectar direto,
-// mas com mais gente na sala é comum algum par de participantes estar atrás
-// de um NAT/firewall que só fecha a chamada com um relay TURN. Sem isso,
-// a partir da 3ª pessoa algumas conexões falham silenciosamente.
-const ICE_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' },
-    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-  ]
-};
+// ICE dinâmico entregue pela API somente a usuários autenticados. A credencial
+// Metered fica no servidor e não é publicada dentro do aplicativo.
+const FALLBACK_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:global.stun.twilio.com:3478' }
+];
+let iceConfigPromise = null;
+
+async function getIceConfig(){
+  if(!iceConfigPromise){
+    iceConfigPromise = (async()=>{
+      try{
+        const payload = await authApi('/api/ice-config');
+        const dynamicServers = payload.iceServers;
+        if(!Array.isArray(dynamicServers) || !dynamicServers.some(s => String(s?.urls || '').startsWith('turn'))){
+          throw new Error('Resposta TURN inválida');
+        }
+        return { iceServers: [...FALLBACK_ICE_SERVERS, ...dynamicServers] };
+      }catch(error){
+        if(error?.status===401 || error?.status===403){
+          clearSession();
+          location.reload();
+          throw error;
+        }
+        console.error('[Statz ICE] Falha ao carregar TURN dinâmico:', error);
+        return { iceServers: FALLBACK_ICE_SERVERS.slice() };
+      }
+    })();
+  }
+  return iceConfigPromise;
+}
 
 function genCode(){
   return String(Math.floor(100 + Math.random()*900));
@@ -1177,6 +1287,7 @@ const peers = new Map();
 let dataConns = new Map();
 let joinedHostOnce = false;
 let roomExitInProgress = false;
+let connectionRouteTimer = null;
 let audioCtx = null;
 let audioOutputNode = null;
 let audioOutputEl = null;
@@ -1811,6 +1922,70 @@ function attachRemoteStream(entry, stream){
   updateEmptyVisibility(entry);
   $('connStatus').textContent = 'conectado';
   if(entry.profile) updateTileProfile(entry);
+  refreshConnectionRoute();
+}
+
+async function getPeerConnectionRoute(pc){
+  if(!pc || pc.connectionState === 'closed') return null;
+  try{
+    const stats = await pc.getStats();
+    let pair = null;
+    stats.forEach(report => {
+      if(report.type === 'transport' && report.selectedCandidatePairId){
+        pair = stats.get(report.selectedCandidatePairId) || pair;
+      }
+    });
+    if(!pair){
+      stats.forEach(report => {
+        if(report.type === 'candidate-pair' && report.state === 'succeeded' && (report.nominated || report.selected)) pair = report;
+      });
+    }
+    if(!pair) return null;
+    const local = stats.get(pair.localCandidateId);
+    const remote = stats.get(pair.remoteCandidateId);
+    const localType = local?.candidateType || pair.localCandidateType;
+    const remoteType = remote?.candidateType || pair.remoteCandidateType;
+    return (localType === 'relay' || remoteType === 'relay') ? 'turn' : 'direct';
+  }catch(e){
+    return null;
+  }
+}
+
+async function refreshConnectionRoute(){
+  const badge = $('routeBadge');
+  if(!badge) return;
+  const pcs = Array.from(peers.values()).map(entry => entry?.call?.peerConnection).filter(Boolean);
+  if(!pcs.length){
+    badge.className = 'route-badge';
+    badge.textContent = 'Aguardando conexão…';
+    badge.title = 'A rota será identificada quando alguém se conectar';
+    return;
+  }
+  const routes = await Promise.all(pcs.map(getPeerConnectionRoute));
+  if(routes.includes('turn')){
+    badge.className = 'route-badge turn';
+    badge.textContent = 'Usando TURN';
+    badge.title = 'A mídia de pelo menos um participante está passando pelo servidor TURN e consumindo a franquia';
+  }else if(routes.length > 0 && routes.every(route => route === 'direct')){
+    badge.className = 'route-badge direct';
+    badge.textContent = 'Conexão direta';
+    badge.title = 'A mídia está usando conexão P2P direta e não consome a franquia TURN';
+  }else{
+    badge.className = 'route-badge';
+    badge.textContent = 'Verificando conexão…';
+    badge.title = 'A conexão WebRTC ainda está sendo negociada';
+  }
+}
+
+function monitorConnectionRoute(call){
+  const pc = call?.peerConnection;
+  if(!pc) return;
+  ['connectionstatechange','iceconnectionstatechange','icegatheringstatechange'].forEach(eventName => {
+    pc.addEventListener(eventName, () => setTimeout(refreshConnectionRoute, 150));
+  });
+  clearInterval(connectionRouteTimer);
+  connectionRouteTimer = setInterval(refreshConnectionRoute, 4000);
+  setTimeout(refreshConnectionRoute, 300);
 }
 
 function playJoinSound(){
@@ -1944,6 +2119,7 @@ function wireCall(call){
   }
 
   resyncSenders(call);
+  monitorConnectionRoute(call);
   call.on('stream', stream => { clearConnectWatchdog(id); connectAttempts.delete(id); attachRemoteStream(entry, stream); resyncSenders(call); });
   call.on('close', () => {
     const current = peers.get(id);
@@ -1953,6 +2129,7 @@ function wireCall(call){
       // Não remove imediatamente: compartilhamento de tela pode estar renegociando.
       // Se o participante realmente saiu, o data channel também fecha e o cleanup remove a tile.
       scheduleParticipantCleanup(id);
+      refreshConnectionRoute();
     }
   });
   call.on('error', () => {
@@ -1961,6 +2138,7 @@ function wireCall(call){
       current.call = null;
       current.stream = null;
       scheduleParticipantCleanup(id);
+      refreshConnectionRoute();
     }
   });
 }
@@ -2277,6 +2455,13 @@ function resetConnectionRuntime(){
   connectAttempts.clear();
   connectWatchdogs.forEach(timer => clearTimeout(timer));
   connectWatchdogs.clear();
+  clearInterval(connectionRouteTimer);
+  connectionRouteTimer = null;
+  const badge = $('routeBadge');
+  if(badge){
+    badge.className = 'route-badge';
+    badge.textContent = 'Aguardando conexão…';
+  }
 }
 
 function exitRoomToMenu({ forgetRoom = false } = {}){
@@ -2289,6 +2474,8 @@ function exitRoomToMenu({ forgetRoom = false } = {}){
   if(speakingRAF) cancelAnimationFrame(speakingRAF);
   connectWatchdogs.forEach(timer => clearTimeout(timer));
   connectWatchdogs.clear();
+  clearInterval(connectionRouteTimer);
+  connectionRouteTimer = null;
 
   peers.forEach(entry => {
     try{ entry.call?.close(); }catch(e){}
@@ -2407,7 +2594,8 @@ async function createRoom(requestedCode = null, reconnecting = false){
   roomExitInProgress = false;
   roomCode = requestedCode || genCode();
   isHost = true;
-  peer = new Peer(ROOM_PREFIX + roomCode, { config: ICE_CONFIG });
+  const iceConfig = await getIceConfig();
+  peer = new Peer(ROOM_PREFIX + roomCode, { config: iceConfig });
 
   peer.on('open', id => {
     reconnectAttempts = 0;
@@ -2501,7 +2689,8 @@ async function joinRoom(code, reconnecting = false){
 
   // IMPORTANTÍSSIMO: cada tentativa captura o Peer que ela própria criou.
   // Callbacks antigos nunca podem destruir/reiniciar um Peer mais novo.
-  const thisPeer = new Peer(undefined, { config: ICE_CONFIG });
+  const iceConfig = await getIceConfig();
+  const thisPeer = new Peer(undefined, { config: iceConfig });
   peer = thisPeer;
   let hostDataOpened = false;
   let retryScheduled = false;
@@ -3263,7 +3452,7 @@ $('hangupBtn').onclick = async () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.5 · stable candidate</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.10 · stable</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
@@ -3286,105 +3475,70 @@ window.addEventListener('DOMContentLoaded', async () => {
 </script>
 
 
+<script>
+/* ---------- Statz Desktop Auto Update ----------
+   Só roda dentro do Tauri. No navegador/GitHub Pages não faz nada. */
+(async function statzAutoUpdater(){
+  if(!window.__TAURI__?.core?.invoke) return;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  await sleep(1800);
+  try{
+    const updater = window.__TAURI__?.updater;
+    if(!updater?.check) return;
+    const update = await updater.check();
+    if(!update) return;
 
+    const ok = confirm(
+      'Nova versão do Statz disponível: ' + update.version + '\n\n' +
+      (update.body || 'Correções e melhorias.') + '\n\n' +
+      'Atualizar agora?'
+    );
+    if(!ok){ try{ await update.close(); }catch(e){} return; }
 
+    const badge = document.getElementById('appVersion');
+    if(badge) badge.textContent = 'Baixando atualização…';
 
-<!-- Statz Windows download — web only -->
-<a
-  id="statzWindowsDownload"
-  class="statz-windows-download"
-  href="https://github.com/statz-ms/call/releases"
-  target="_blank"
-  rel="noopener noreferrer"
-  aria-label="Baixar Statz para Windows"
->
-  <span class="statz-windows-icon" aria-hidden="true">
-    <svg viewBox="0 0 24 24" width="19" height="19">
-      <path fill="currentColor" d="M3 5.1 10.3 4v7H3V5.1Zm8.2-1.2L21 2.5V11h-9.8V3.9ZM3 12h7.3v7L3 17.9V12Zm8.2 0H21v8.5l-9.8-1.4V12Z"/>
-    </svg>
-  </span>
-  <span class="statz-windows-copy">
-    <strong>Baixar para Windows</strong>
-    <small>Aplicativo desktop</small>
-  </span>
-  <span class="statz-windows-arrow" aria-hidden="true">↓</span>
-</a>
+    await update.downloadAndInstall((event) => {
+      if(!badge) return;
+      if(event.event === 'Started') badge.textContent = 'Baixando atualização…';
+      else if(event.event === 'Finished') badge.textContent = 'Instalando atualização…';
+    });
 
-<style>
-.statz-windows-download{
-  position:fixed;
-  left:18px;
-  bottom:18px;
-  z-index:99990;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:210px;
-  padding:10px 12px;
-  border:1px solid rgba(167,111,255,.32);
-  border-radius:13px;
-  background:linear-gradient(135deg,rgba(28,23,38,.96),rgba(18,16,24,.96));
-  box-shadow:0 10px 28px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.035);
-  color:#f4efff;
-  text-decoration:none;
-  font-family:inherit;
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;
-}
-.statz-windows-download:hover{
-  transform:translateY(-2px);
-  border-color:rgba(177,122,255,.7);
-  background:linear-gradient(135deg,rgba(42,30,61,.98),rgba(23,19,32,.98));
-  box-shadow:0 14px 34px rgba(0,0,0,.36),0 0 22px rgba(139,83,255,.10);
-}
-.statz-windows-icon{
-  width:36px;
-  height:36px;
-  flex:0 0 36px;
-  display:grid;
-  place-items:center;
-  border-radius:10px;
-  color:#b77cff;
-  background:rgba(151,91,255,.11);
-  border:1px solid rgba(173,112,255,.16);
-}
-.statz-windows-copy{
-  display:flex;
-  flex-direction:column;
-  line-height:1.18;
-  flex:1;
-}
-.statz-windows-copy strong{
-  font-size:12px;
-  font-weight:750;
-  letter-spacing:.01em;
-}
-.statz-windows-copy small{
-  margin-top:3px;
-  color:#918b9c;
-  font-size:10px;
-}
-.statz-windows-arrow{
-  color:#a76fff;
-  font-size:17px;
-  padding:0 3px;
-}
-html[data-squadcall-desktop="1"] .statz-windows-download,
-html[data-statz-desktop="1"] .statz-windows-download{
-  display:none !important;
-}
-@media(max-width:640px){
-  .statz-windows-download{
-    left:10px;
-    bottom:10px;
-    min-width:0;
-    padding:9px 10px;
+    // Se o updater chegou até aqui sem erro, a instalação terminou.
+    // O build antigo ficava preso visualmente em "Instalando atualização…"
+    // porque não fechava/reiniciava o app depois do install.
+    if(badge) badge.textContent = 'Atualização instalada. Reiniciando…';
+
+    try{
+      const invoke = window.__TAURI__?.core?.invoke;
+      if(invoke){
+        await invoke('restart_app');
+        return;
+      }
+    }catch(e){
+      console.warn('[Statz Updater] Falha ao reiniciar automaticamente:', e);
+    }
+
+    // Fallback: fecha o app para o usuário abrir já atualizado.
+    try{
+      const invoke = window.__TAURI__?.core?.invoke;
+      if(invoke){
+        await invoke('exit_app');
+        return;
+      }
+    }catch(e){
+      console.warn('[Statz Updater] Falha ao fechar automaticamente:', e);
+    }
+
+    alert('Atualização instalada. Feche e abra o Statz novamente.');
+  }catch(e){
+    console.warn('[Statz Updater]', e);
+    const badge = document.getElementById('appVersion');
+    if(badge) badge.textContent = 'Falha ao atualizar';
+    alert('Não foi possível concluir a atualização. Feche o Statz e tente novamente.');
   }
-  .statz-windows-copy small{display:none}
-  .statz-windows-icon{width:32px;height:32px;flex-basis:32px}
-}
-</style>
+})();
+</script>
 
 </body>
 </html>
