@@ -219,6 +219,11 @@
     font-size:11px; color: var(--muted);
   }
   .tile-tag span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tile.pinned{grid-column:1/-1;min-height:52vh;order:-1;border-color:rgba(155,108,255,.7);box-shadow:0 0 0 1px rgba(155,108,255,.2)}
+  .video-grid.has-pin{grid-auto-rows:minmax(150px,1fr)}
+  .share-status,.hand-status{display:none!important;padding:3px 7px;border-radius:999px;font-size:9px!important;font-weight:800;overflow:visible!important}
+  .share-status.show,.share-status.visible{display:inline-flex!important;background:rgba(155,108,255,.18);color:#cbb4ff}.hand-status.show,.hand-status.visible{display:inline-flex!important;background:rgba(230,174,76,.16);color:#ffd47d}
+  .pin-btn{position:absolute;right:48px;top:12px;z-index:4;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:rgba(10,10,10,.68);color:var(--muted);display:flex;align-items:center;justify-content:center}.pin-btn.active,.pin-btn:hover{color:#d5c1ff;border-color:var(--accent);background:rgba(78,48,126,.72)}
   .tile-empty{
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:10px; color: var(--muted); font-size:13.5px; z-index:1;
@@ -402,6 +407,8 @@
   }
   .settings-menu button:hover{ background: var(--surface-2); }
   .settings-menu .icon{ width:18px; height:18px; color: var(--muted); flex-shrink:0; }
+  .call-side-panel{position:fixed;top:72px;right:16px;bottom:92px;width:min(340px,calc(100vw - 32px));z-index:55;display:flex;flex-direction:column;background:rgba(17,12,24,.97);border:1px solid #3a2c4e;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.65);transform:translateX(calc(100% + 28px));opacity:0;pointer-events:none;transition:.2s ease;overflow:hidden}.call-side-panel.active{transform:none;opacity:1;pointer-events:auto}.side-head{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border-bottom:1px solid #30243f}.side-head strong{font-size:13px}.side-close{border:0;background:transparent;color:#988ba7;font-size:20px}.chat-list,.participant-list{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}.chat-message{padding:9px 10px;background:#21182d;border:1px solid #332541;border-radius:11px;font-size:12px;line-height:1.4;word-break:break-word}.chat-message.mine{background:rgba(113,75,180,.2);border-color:#574078}.chat-meta{display:flex;justify-content:space-between;gap:10px;font-size:9px;color:#988ba7;margin-bottom:4px}.chat-compose{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px;border-top:1px solid #30243f}.chat-compose input{min-width:0;background:#21192d;color:#fff;border:1px solid #3a2c4e;border-radius:9px;padding:10px}.chat-compose button{border:1px solid #7855b5;background:#2b1d3c;color:#d7c3ff;border-radius:9px;padding:0 13px;font-weight:800}.participant-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #30243f;background:#18111f;border-radius:11px}.participant-avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;background:#2a2035;display:flex;align-items:center;justify-content:center}.participant-avatar img{width:100%;height:100%;object-fit:cover}.participant-name{min-width:0;flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis}.ctrl-btn.unread::after{content:'';position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:#ff5f78;box-shadow:0 0 0 2px #17121e}.shortcut-hint{padding:9px 12px;border-top:1px solid #30243f;color:#766d82;font-size:9px;line-height:1.5}
+  @media(max-width:700px){.call-side-panel{top:64px;right:8px;bottom:84px;width:calc(100vw - 16px)}}
 
   /* ---------- Dispositivos de áudio ---------- */
   .audio-panel{
@@ -743,6 +750,8 @@ body.in-call .admin-launch{display:none!important}
 .admin-create select:focus,.admin-create input:focus{outline:2px solid rgba(155,108,255,.35);border-color:#8b62d8}
 .admin-create .admin-field:nth-child(3){grid-column:1}.admin-create .admin-btn{grid-column:2;align-self:end;width:100%;height:36px;white-space:nowrap}
 .admin-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.admin-tools{display:grid;grid-template-columns:1fr 138px;gap:8px;margin-bottom:10px}.admin-tools input,.admin-tools select{min-width:0;background:#21192d;color:#f3effa;border:1px solid #3a2c4e;border-radius:9px;padding:9px 10px;font:inherit;font-size:11px}.admin-tools input:focus,.admin-tools select:focus{outline:2px solid rgba(155,108,255,.3);border-color:#8b62d8}
+.admin-audit{grid-column:1/-1;margin-top:14px!important}.audit-event{display:grid;grid-template-columns:120px 1fr auto;gap:10px;align-items:center;padding:9px 2px;border-top:1px solid #2d213a;font-size:10px}.audit-event:first-child{border-top:0}.audit-action{font-weight:800;color:#c7adff}.audit-time{color:#786e84;white-space:nowrap}
 #adminModal .admin-row{border:1px solid #30223f!important;border-radius:11px;padding:11px 12px!important;background:rgba(13,9,19,.5);align-items:center}
 .admin-name{font-size:12px!important}.admin-meta{color:#91869f!important;line-height:1.45}.admin-key{font-size:12px!important;word-break:break-all}
 .admin-status{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800;margin-left:6px}
@@ -750,7 +759,7 @@ body.in-call .admin-launch{display:none!important}
 .admin-btn{transition:.15s ease}.admin-btn:hover{border-color:#8a62cc;transform:translateY(-1px)}.admin-btn.danger{border-color:rgba(228,95,120,.35);background:rgba(228,95,120,.08)}
 .admin-empty{padding:22px;text-align:center;color:#766d82;font-size:11px}
 @media(max-width:850px){.admin-grid{grid-template-columns:1fr}.admin-create{grid-template-columns:minmax(0,1fr) 104px}.admin-launch{right:116px!important}}
-@media(max-width:600px){.admin-stats{grid-template-columns:1fr}.admin-create{grid-template-columns:1fr!important}.admin-create .admin-field:nth-child(3),.admin-create .admin-btn{grid-column:1;width:100%}.admin-launch{right:106px!important;font-size:0}.admin-launch::after{content:'👑';font-size:14px}}
+@media(max-width:600px){.admin-stats{grid-template-columns:1fr}.admin-create,.admin-tools{grid-template-columns:1fr!important}.admin-create .admin-field:nth-child(3),.admin-create .admin-btn{grid-column:1;width:100%}.audit-event{grid-template-columns:1fr}.admin-launch{right:106px!important;font-size:0}.admin-launch::after{content:'👑';font-size:14px}}
 .mic-status-icon{
   display:none; align-items:center; justify-content:center; flex:0 0 auto;
   width:16px; height:16px; color:var(--danger); margin-left:2px;
@@ -795,7 +804,8 @@ body.in-call .admin-launch{display:none!important}
     <div class="admin-stats" id="adminStats"></div>
     <div class="admin-grid">
       <div class="admin-section"><div class="admin-section-head"><h3>🔑 Licenças de acesso</h3><span class="admin-count" id="keyCount">0 keys</span></div><div class="admin-create"><div class="admin-field"><label>Descrição</label><input id="newKeyLabel" placeholder="Ex.: João / teste"></div><div class="admin-field"><label>Usos</label><input id="newKeyUses" type="number" min="1" max="100" value="1"></div><div class="admin-field"><label>Duração</label><select id="newKeyDuration"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">1 ano</option><option value="0">Vitalícia</option></select></div><button class="admin-btn primary" id="newKeyBtn">+ Gerar KEY</button></div><div id="adminKeys" class="admin-list"></div></div>
-      <div class="admin-section"><div class="admin-section-head"><h3>👤 Contas</h3><span class="admin-count" id="userCount">0 usuários</span></div><div id="adminUsers" class="admin-list"></div></div>
+      <div class="admin-section"><div class="admin-section-head"><h3>👤 Contas</h3><span class="admin-count" id="userCount">0 usuários</span></div><div class="admin-tools"><input id="adminUserSearch" placeholder="Pesquisar nome ou @usuário"><select id="adminUserFilter"><option value="all">Todos os status</option><option value="active">Ativos</option><option value="blocked">Bloqueados</option><option value="expired">Expirados</option><option value="pending">Aguardando</option></select></div><div id="adminUsers" class="admin-list"></div></div>
+      <div class="admin-section admin-audit"><div class="admin-section-head"><h3>📋 Histórico administrativo</h3><span class="admin-count" id="auditCount">0 eventos</span></div><div id="adminAudit" class="admin-list"></div></div>
     </div>
   </div>
 </div></div>
@@ -867,7 +877,7 @@ body.in-call .admin-launch{display:none!important}
       </div>
       <div class="tile-tag" id="myTag">
         <span id="myTagAv" class="av-fallback">👤</span>
-        <span id="myTagName">Você</span><span id="myMicStatus" class="mic-status-icon" title="Microfone mutado" aria-label="Microfone mutado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg></span>
+        <span id="myTagName">Você</span><span id="myShareStatus" class="share-status">Tela</span><span id="myHandStatus" class="hand-status">✋</span><span id="myMicStatus" class="mic-status-icon" title="Microfone mutado" aria-label="Microfone mutado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg></span>
       </div>
       <button class="expand-btn" id="myExpandBtn" title="Ver minha transmissão em tela cheia">⤢</button>
     </div>
@@ -878,6 +888,9 @@ body.in-call .admin-launch{display:none!important}
       </div>
     </div>
   </div>
+
+  <aside class="call-side-panel" id="chatPanel"><div class="side-head"><strong>💬 Chat da sala</strong><button class="side-close" type="button" data-close-side>×</button></div><div class="chat-list" id="chatList"><div class="admin-empty">Nenhuma mensagem ainda.</div></div><form class="chat-compose" id="chatForm"><input id="chatInput" maxlength="500" placeholder="Escreva uma mensagem…" autocomplete="off"><button type="submit">Enviar</button></form><div class="shortcut-hint">Atalho: C abre o chat · Enter envia</div></aside>
+  <aside class="call-side-panel" id="participantsPanel"><div class="side-head"><strong>👥 Participantes</strong><button class="side-close" type="button" data-close-side>×</button></div><div class="participant-list" id="participantList"></div><div class="shortcut-hint">M microfone · V câmera · S compartilhar · H levantar a mão · C chat</div></aside>
 
   <div class="sync-panel" id="qualityPanel">
     <div class="sync-label">Qualidade da tela compartilhada</div>
@@ -933,6 +946,9 @@ body.in-call .admin-launch{display:none!important}
     <button class="ctrl-btn" id="micBtn" data-tooltip="Microfone ligado" aria-label="Microfone ligado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path><path d="M8 22h8"></path></svg></button>
     <button class="ctrl-btn off" id="camBtn" data-tooltip="Ligar câmera" aria-label="Ligar câmera"><svg class="icon" viewBox="0 0 24 24"><path d="M15 10l4.5-2.5v9L15 14"></path><rect x="3" y="6" width="12" height="12" rx="2"></rect><path class="cam-slash" d="M3 3l18 18"></path></svg></button>
     <button class="ctrl-btn" id="shareBtn" data-tooltip="Compartilhar tela" aria-label="Compartilhar tela"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg></button>
+    <button class="ctrl-btn" id="chatBtn" data-tooltip="Abrir chat (C)" aria-label="Abrir chat">💬</button>
+    <button class="ctrl-btn" id="participantsBtn" data-tooltip="Participantes" aria-label="Ver participantes">👥</button>
+    <button class="ctrl-btn" id="handBtn" data-tooltip="Levantar a mão (H)" aria-label="Levantar a mão">✋</button>
     <button class="ctrl-btn fullscreen" id="fullscreenBtn" data-tooltip="Tela cheia" aria-label="Tela cheia"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3H3v5"></path><path d="M16 3h5v5"></path><path d="M21 16v5h-5"></path><path d="M3 16v5h5"></path></svg></button>
     <button class="ctrl-btn hangup" id="hangupBtn" data-tooltip="Sair da chamada" aria-label="Sair da chamada"><svg class="icon" viewBox="0 0 24 24"><path d="M5 15c3.5-3 10.5-3 14 0"></path><path d="M8 13l-2 4"></path><path d="M16 13l2 4"></path></svg></button>
   </div>
@@ -1042,33 +1058,51 @@ $('adminClose').onclick=()=>$('adminModal').classList.remove('active');$('adminO
 function escA(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function adminDate(value){if(!value)return 'Vitalícia';const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});}
 function keyDuration(days){const n=Number(days)||0;if(!n)return 'Vitalícia';if(n===365)return '1 ano';return n+' dia'+(n===1?'':'s');}
+let adminUsersCache=[];
+function renderAdminUsers(){
+    const query=($('adminUserSearch')?.value||'').trim().toLowerCase(),filter=$('adminUserFilter')?.value||'all';
+    const users=adminUsersCache.filter(x=>{
+      const text=(x.display_name+' '+x.username).toLowerCase();
+      const matchesText=!query||text.includes(query);
+      const matchesStatus=filter==='all'||(filter==='active'&&x.approved&&x.active&&!x.expired)||(filter==='blocked'&&!x.active)||(filter==='expired'&&x.expired)||(filter==='pending'&&!x.approved&&x.active);
+      return matchesText&&matchesStatus;
+    });
+    $('userCount').textContent=users.length+' de '+adminUsersCache.length;
+    $('adminUsers').innerHTML=users.map(x=>{
+      const status=!x.active?['Bloqueada','bad']:x.expired?['Expirada','bad']:!x.approved?['Aguardando','warn']:['Ativa','ok'];
+      const access=x.access_expires_at?'Expira em '+adminDate(x.access_expires_at):'Acesso vitalício';
+      const keyInfo=x.registered_with_key?' · KEY '+escA(x.registered_with_key)+(x.registered_with_key_label?' ('+escA(x.registered_with_key_label)+')':''):'';
+      const uid=JSON.stringify(String(x.id));
+      return `<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span class="admin-status ${status[1]}">${status[0]}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)} · ${access}${keyInfo}</div></div><div class="admin-actions">${!x.approved?`<button class="admin-btn primary" onclick='approveUser(${uid})'>Aprovar</button>`:''}${x.id!==authUser.id?(x.active?`<button class="admin-btn danger" onclick='setUser(${uid},false)'>Bloquear</button>`:`<button class="admin-btn primary" onclick='setUser(${uid},true)'>Desbloquear</button>`):''}${x.role!=='admin'?`<button class="admin-btn" onclick='renewUser(${uid})'>Renovar</button><button class="admin-btn" onclick='setLifetime(${uid})'>Vitalícia</button><button class="admin-btn" onclick='revokeSessions(${uid})'>Revogar sessões</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick='deleteUser(${uid})'>Excluir</button>`:''}</div></div>`;
+    }).join('')||'<div class="admin-empty">Nenhuma conta encontrada.</div>';
+}
+function auditLabel(action){return ({register:'Cadastro',approve:'Conta aprovada',unapprove:'Aprovação removida',block:'Conta bloqueada',unblock:'Conta desbloqueada',renew:'Acesso renovado',lifetime:'Acesso vitalício',revoke_sessions:'Sessões revogadas',delete_user:'Conta excluída',create_key:'KEY criada',revoke_key:'KEY revogada'})[action]||action;}
 async function refreshAdminPanel(){
   try{
-    const [u,k]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys')]);
-    const users=u.users||[],keys=k.keys||[];
+    const [u,k,a]=await Promise.all([authApi('/api/admin/users'),authApi('/api/admin/invite-keys'),authApi('/api/admin/audit-log')]);
+    const users=u.users||[],keys=k.keys||[],events=a.events||[];adminUsersCache=users;
     const activeUsers=users.filter(x=>x.approved&&x.active&&!x.expired).length;
     const pendingUsers=users.filter(x=>!x.approved&&x.active).length;
     const activeKeys=keys.filter(x=>!x.revoked&&x.uses_left>0).length;
     $('adminStats').innerHTML=`<div class="admin-stat"><strong>${activeUsers}</strong><span>Contas ativas</span></div><div class="admin-stat"><strong>${pendingUsers}</strong><span>Aguardando aprovação</span></div><div class="admin-stat"><strong>${activeKeys}</strong><span>KEYs disponíveis</span></div>`;
-    $('userCount').textContent=users.length+' usuário'+(users.length===1?'':'s');
     $('keyCount').textContent=keys.length+' key'+(keys.length===1?'':'s');
-    $('adminUsers').innerHTML=users.map(x=>{
-      const status=!x.active?['Bloqueada','bad']:x.expired?['Expirada','bad']:!x.approved?['Aguardando','warn']:['Ativa','ok'];
-      const access=x.access_expires_at?'Expira em '+adminDate(x.access_expires_at):'Acesso vitalício';
-      const uid=JSON.stringify(String(x.id));
-      return `<div class="admin-row"><div><div class="admin-name">${escA(x.display_name)} <span class="admin-status ${status[1]}">${status[0]}</span></div><div class="admin-meta">@${escA(x.username)} · ${escA(x.role)} · ${access}</div></div><div class="admin-actions">${!x.approved?`<button class="admin-btn primary" onclick='approveUser(${uid})'>Aprovar</button>`:''}${x.id!==authUser.id?(x.active?`<button class="admin-btn danger" onclick='setUser(${uid},false)'>Bloquear</button>`:`<button class="admin-btn primary" onclick='setUser(${uid},true)'>Desbloquear</button>`):''}${x.role!=='admin'?`<button class="admin-btn" onclick='extendUser(${uid},30)'>+30 dias</button><button class="admin-btn" onclick='setLifetime(${uid})'>Vitalícia</button>`:''}${x.id!==authUser.id?`<button class="admin-btn danger" onclick='deleteUser(${uid})'>Excluir</button>`:''}</div></div>`;
-    }).join('')||'<div class="admin-empty">Nenhum usuário cadastrado.</div>';
+    renderAdminUsers();
     $('adminKeys').innerHTML=keys.map(x=>{
       const state=x.revoked?['Revogada','bad']:x.uses_left<=0?['Esgotada','warn']:['Ativa','ok'];
       const kid=JSON.stringify(String(x.id));
-      return `<div class="admin-row"><div><div class="admin-key">${escA(x.key)} <span class="admin-status ${state[1]}">${state[0]}</span></div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${keyDuration(x.duration_days)} de acesso</div></div><div class="admin-actions"><button class="admin-btn" onclick='copyKey(${JSON.stringify(String(x.key))})'>Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick='revokeKey(${kid})'>Revogar</button>`:''}</div></div>`;
+      const used=(x.used_by||[]).map(y=>escA(y.display_name||y.username)).join(', ');
+      return `<div class="admin-row"><div><div class="admin-key">${escA(x.key)} <span class="admin-status ${state[1]}">${state[0]}</span></div><div class="admin-meta">${escA(x.label||'Sem descrição')} · ${x.uses_left}/${x.max_uses} usos · ${keyDuration(x.duration_days)} de acesso${used?' · Usada por: '+used:''}</div></div><div class="admin-actions"><button class="admin-btn" onclick='copyKey(${JSON.stringify(String(x.key))})'>Copiar</button>${!x.revoked&&x.uses_left>0?`<button class="admin-btn danger" onclick='revokeKey(${kid})'>Revogar</button>`:''}</div></div>`;
     }).join('')||'<div class="admin-empty">Nenhuma KEY gerada.</div>';
+    $('auditCount').textContent=events.length+' eventos';
+    $('adminAudit').innerHTML=events.slice(0,60).map(e=>`<div class="audit-event"><span class="audit-action">${escA(auditLabel(e.action))}</span><span><strong>${escA(e.actor_name)}</strong> → ${escA(e.target_name||'—')}${e.details?.days?' · '+Number(e.details.days)+' dias':''}</span><span class="audit-time">${adminDate(e.created_at)} ${new Date(e.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')||'<div class="admin-empty">Nenhum evento registrado ainda.</div>';
   }catch(e){alert(e.message);}
 }
+$('adminUserSearch').addEventListener('input',renderAdminUsers);$('adminUserFilter').addEventListener('change',renderAdminUsers);
 window.approveUser=async id=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({approved:true,active:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};
 window.setUser=async(id,active)=>{if(!active&&!confirm('Bloquear esta conta imediatamente?'))return;try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({active})});await refreshAdminPanel();}catch(e){alert(e.message);}};
-window.extendUser=async(id,days)=>{try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({extend_days:days})});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.renewUser=async id=>{const raw=prompt('Quantos dias deseja adicionar?','30');if(raw===null)return;const days=Math.floor(Number(raw));if(!Number.isFinite(days)||days<1||days>3650){alert('Informe entre 1 e 3650 dias.');return;}try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({extend_days:days})});await refreshAdminPanel();}catch(e){alert(e.message);}};
 window.setLifetime=async id=>{if(!confirm('Transformar esta conta em acesso vitalício?'))return;try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({lifetime:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};
+window.revokeSessions=async id=>{if(!confirm('Desconectar esta conta de todos os dispositivos?'))return;try{await authApi('/api/admin/users/'+id,{method:'PATCH',body:JSON.stringify({revoke_sessions:true})});await refreshAdminPanel();}catch(e){alert(e.message);}};
 window.deleteUser=async id=>{if(!confirm('Excluir este usuário permanentemente?'))return;try{await authApi('/api/admin/users/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};
 window.revokeKey=async id=>{if(!confirm('Revogar esta KEY?'))return;try{await authApi('/api/admin/invite-keys/'+id,{method:'DELETE'});await refreshAdminPanel();}catch(e){alert(e.message);}};
 window.copyKey=async k=>{try{await navigator.clipboard.writeText(k);alert('KEY copiada: '+k);}catch(e){alert(k);}};
@@ -1281,6 +1315,8 @@ let screenSystemGain = null;
 let isHost = false;
 let roomCode = null;
 let micOn = true, camOn = false, sharing = false;
+let handRaised = false, pinnedPeerId = null;
+const chatMessages = [], seenChatMessages = new Set();
 updateCamButton();
 let roster = [];
 const peers = new Map();
@@ -1636,7 +1672,69 @@ function enterCallUI(){
   setMyTagUI();
   updateCamUI();
   ensureAudioCtx();
+  renderParticipants();
 }
+
+function sendRoomData(payload){
+  dataConns.forEach(c => { if(c.open) try{ c.send(payload); }catch(e){} });
+}
+
+function toggleSidePanel(panelId, force){
+  ['chatPanel','participantsPanel'].forEach(id => {
+    const panel = $(id), open = id === panelId && (force ?? !panel.classList.contains('active'));
+    panel.classList.toggle('active', open);
+  });
+  $('chatBtn').classList.toggle('active', $('chatPanel').classList.contains('active'));
+  $('participantsBtn').classList.toggle('active', $('participantsPanel').classList.contains('active'));
+  if($('chatPanel').classList.contains('active')) setTimeout(()=>$('chatInput').focus(), 40);
+}
+
+function addChatMessage(msg){
+  if(!msg?.id || seenChatMessages.has(msg.id)) return;
+  seenChatMessages.add(msg.id);
+  chatMessages.push(msg);
+  if(chatMessages.length > 200) chatMessages.shift();
+  const mine = msg.senderId === myId;
+  $('chatList').innerHTML = chatMessages.map(m => `<div class="chat-message${m.senderId===myId?' mine':''}"><div class="chat-meta"><strong>${escA(m.name||'Participante')}</strong><span>${new Date(m.time||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div><div>${escA(m.text||'')}</div></div>`).join('');
+  $('chatList').scrollTop = $('chatList').scrollHeight;
+  if(!mine && !$('chatPanel').classList.contains('active')) $('chatBtn').classList.add('unread');
+}
+
+function renderParticipants(){
+  const items = [{id:myId, name:myProfile.name||'Você', avatar:myProfile.avatar, hand:handRaised, sharing}];
+  peers.forEach((entry,id) => items.push({id,name:entry.profile?.name||'Participante',avatar:entry.profile?.avatar,hand:!!entry.remoteHandRaised,sharing:!!entry.remoteSharing}));
+  $('participantList').innerHTML = items.map(p => `<div class="participant-row"><span class="participant-avatar">${p.avatar?`<img src="${p.avatar}" alt="">`:escA((p.name[0]||'?').toUpperCase())}</span><span class="participant-name">${escA(p.name)}${p.id===myId?' (você)':''}</span>${p.sharing?'<span class="share-status visible">Tela</span>':''}${p.hand?'<span class="hand-status visible">✋</span>':''}</div>`).join('');
+}
+
+function updateCallLayout(){
+  const pinId = pinnedPeerId;
+  videoGrid.classList.toggle('has-pin', !!pinId);
+  $('myTile').classList.toggle('pinned', pinId === 'self');
+  peers.forEach((entry,id) => entry.tile?.classList.toggle('pinned', pinId === id));
+}
+
+function togglePin(id){
+  pinnedPeerId = pinnedPeerId === id ? null : id;
+  updateCallLayout();
+}
+
+function setRemoteHand(id, value){
+  const entry = peers.get(id); if(!entry) return;
+  entry.remoteHandRaised = !!value;
+  entry.tag?.querySelector('.hand-status')?.classList.toggle('visible', !!value);
+  renderParticipants();
+}
+
+function setRemoteShare(id, value){
+  const entry = peers.get(id); if(!entry) return;
+  entry.remoteSharing = !!value;
+  entry.tile?.classList.toggle('sharing', !!value);
+  entry.tag?.querySelector('.share-status')?.classList.toggle('visible', !!value);
+  renderParticipants();
+}
+
+function broadcastHandState(){ sendRoomData({type:'hand-state', raised:handRaised}); }
+function broadcastShareState(){ sendRoomData({type:'share-state', sharing:!!sharing}); }
 
 function createTile(id){
   const tile = document.createElement('div');
@@ -1658,7 +1756,11 @@ function createTile(id){
 
   const tag = document.createElement('div');
   tag.className = 'tile-tag';
-  tag.innerHTML = `<span class="av-fallback">👤</span><span class="name">Participante</span><span class="mic-status-icon" title="Microfone mutado" aria-label="Microfone mutado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg></span>`;
+  tag.innerHTML = `<span class="av-fallback">👤</span><span class="name">Participante</span><span class="share-status">Tela</span><span class="hand-status">✋</span><span class="mic-status-icon" title="Microfone mutado" aria-label="Microfone mutado"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 5l14 14"></path><path d="M5 11a7 7 0 0 0 14 0"></path></svg></span>`;
+
+  const pinBtn = document.createElement('button');
+  pinBtn.className = 'pin-btn'; pinBtn.title = 'Fixar participante'; pinBtn.textContent = '📌';
+  pinBtn.onclick = () => togglePin(id);
 
   const expandBtn = document.createElement('button');
   expandBtn.className = 'expand-btn';
@@ -1718,10 +1820,11 @@ function createTile(id){
     updateGain(entry);
   };
 
-  tile.append(video, empty, tag, expandBtn, volBtn, volPanel);
+  tile.append(video, empty, tag, pinBtn, expandBtn, volBtn, volPanel);
   videoGrid.appendChild(tile);
   $('waitingTile').style.display = 'none';
-  return { tile, video, tag, empty, volBtn, volPanel, volSlider, volValue, volMuteBtn, remoteMicOn: true };
+  updateCallLayout(); renderParticipants();
+  return { tile, video, tag, empty, pinBtn, volBtn, volPanel, volSlider, volValue, volMuteBtn, remoteMicOn: true };
 }
 
 function updateTileProfile(entry){
@@ -1766,6 +1869,7 @@ function updateTileProfile(entry){
   setAvatar(entry.tag, false);
   setAvatar(entry.empty, true);
   updateRemoteMicStatus(entry);
+  renderParticipants();
 }
 
 function removeTile(id){
@@ -1774,10 +1878,12 @@ function removeTile(id){
   teardownWebAudio(entry);
   if(entry.tile) entry.tile.remove();
   peers.delete(id);
+  if(pinnedPeerId === id) pinnedPeerId = null;
   const dc = dataConns.get(id);
   if(dc){ try{ dc.close(); }catch(e){} dataConns.delete(id); }
   if(peers.size === 0) $('waitingTile').style.display = 'flex';
   $('connStatus').textContent = peers.size === 0 ? 'esperando a galera entrar…' : 'conectado';
+  updateCallLayout(); renderParticipants();
 }
 
 function teardownWebAudio(entry){
@@ -2216,6 +2322,8 @@ function broadcastCamState(){
 // então o nome não pode depender só dela.
 const hostKnownProfiles = new Map(); // id -> {name, avatar}
 const hostKnownMicStates = new Map(); // id -> boolean
+const hostKnownHandStates = new Map();
+const hostKnownShareStates = new Map();
 
 function applyProfileUpdate(id, name, avatar){
   let entry = peers.get(id);
@@ -2239,6 +2347,8 @@ function pruneHostRoster(){
   });
   hostKnownProfiles.forEach((_, id) => { if(!roster.includes(id)) hostKnownProfiles.delete(id); });
   hostKnownMicStates.forEach((_, id) => { if(!roster.includes(id)) hostKnownMicStates.delete(id); });
+  hostKnownHandStates.forEach((_, id) => { if(!roster.includes(id)) hostKnownHandStates.delete(id); });
+  hostKnownShareStates.forEach((_, id) => { if(!roster.includes(id)) hostKnownShareStates.delete(id); });
 }
 
 function handleDataMessage(fromId, msg, sourceConn = null){
@@ -2267,10 +2377,14 @@ function handleDataMessage(fromId, msg, sourceConn = null){
         hostKnownMicStates.forEach((state, pid) => {
           if(roster.includes(pid)) conn.send({ type:'mic-state-relay', id:pid, micOn:!!state });
         });
+        hostKnownHandStates.forEach((state, pid) => { if(roster.includes(pid)) conn.send({type:'hand-state-relay',id:pid,raised:!!state}); });
+        hostKnownShareStates.forEach((state, pid) => { if(roster.includes(pid)) conn.send({type:'share-state-relay',id:pid,sharing:!!state}); });
         sendProfile(conn);
         conn.send({ type: 'profile-request' });
         conn.send({ type: 'cam-state', camOn: camOn || sharing });
         conn.send({ type: 'mic-state', micOn: !!micOn });
+        conn.send({ type: 'hand-state', raised: !!handRaised });
+        conn.send({ type: 'share-state', sharing: !!sharing });
       }
       if(!roster.includes(fromId)){
         roster.push(fromId);
@@ -2337,6 +2451,22 @@ function handleDataMessage(fromId, msg, sourceConn = null){
       entry.remoteMicOn = !!msg.micOn;
       updateRemoteMicStatus(entry);
     }
+  } else if(msg.type === 'chat'){
+    const clean = {id:String(msg.id||''),senderId:fromId,name:String(msg.name||'Participante').slice(0,20),text:String(msg.text||'').slice(0,500),time:Number(msg.time)||Date.now()};
+    addChatMessage(clean);
+    if(isHost) dataConns.forEach((c,pid)=>{ if(pid!==fromId&&c.open) try{c.send({...clean,type:'chat-relay'});}catch(e){} });
+  } else if(msg.type === 'chat-relay'){
+    addChatMessage({id:msg.id,senderId:msg.senderId,name:msg.name,text:msg.text,time:msg.time});
+  } else if(msg.type === 'hand-state'){
+    setRemoteHand(fromId, msg.raised);
+    if(isHost){ hostKnownHandStates.set(fromId,!!msg.raised); dataConns.forEach((c,pid)=>{if(pid!==fromId&&c.open)try{c.send({type:'hand-state-relay',id:fromId,raised:!!msg.raised});}catch(e){}}); }
+  } else if(msg.type === 'hand-state-relay'){
+    if(msg.id && msg.id!==myId) setRemoteHand(msg.id,msg.raised);
+  } else if(msg.type === 'share-state'){
+    setRemoteShare(fromId, msg.sharing);
+    if(isHost){ hostKnownShareStates.set(fromId,!!msg.sharing); dataConns.forEach((c,pid)=>{if(pid!==fromId&&c.open)try{c.send({type:'share-state-relay',id:fromId,sharing:!!msg.sharing});}catch(e){}}); }
+  } else if(msg.type === 'share-state-relay'){
+    if(msg.id && msg.id!==myId) setRemoteShare(msg.id,msg.sharing);
   } else if(msg.type === 'profile-request'){
     const conn = (sourceConn && sourceConn.open) ? sourceConn : dataConns.get(fromId);
     if(conn) sendProfile(conn);
@@ -2400,6 +2530,8 @@ function wireDataConn(conn){
     sendProfile(conn);
     try{ conn.send({ type: 'cam-state', camOn: camOn || sharing }); }catch(e){}
     try{ conn.send({ type: 'mic-state', micOn: !!micOn }); }catch(e){}
+    try{ conn.send({ type: 'hand-state', raised: !!handRaised }); }catch(e){}
+    try{ conn.send({ type: 'share-state', sharing: !!sharing }); }catch(e){}
     try{ conn.send({ type: 'profile-request' }); }catch(e){}
 
     // Toda conexão/reconexão do convidado com o host refaz o handshake. Na versão
@@ -2779,6 +2911,36 @@ $('codeInput').addEventListener('input', () => {
 
 $('joinBtn').onclick = () => joinRoom($('codeInput').value.trim());
 
+$('chatBtn').onclick = () => { $('chatBtn').classList.remove('unread'); toggleSidePanel('chatPanel'); };
+$('participantsBtn').onclick = () => toggleSidePanel('participantsPanel');
+document.querySelectorAll('[data-close-side]').forEach(btn => btn.onclick = () => toggleSidePanel('', false));
+$('chatForm').onsubmit = e => {
+  e.preventDefault();
+  const text = $('chatInput').value.trim(); if(!text) return;
+  const msg = {type:'chat',id:(crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`),senderId:myId,name:myProfile.name||'Você',text,time:Date.now()};
+  addChatMessage(msg); sendRoomData(msg); $('chatInput').value=''; $('chatInput').focus();
+};
+$('handBtn').onclick = () => {
+  handRaised = !handRaised;
+  $('handBtn').classList.toggle('active',handRaised);
+  $('handBtn').dataset.tooltip = handRaised ? 'Abaixar a mão (H)' : 'Levantar a mão (H)';
+  $('myHandStatus').classList.toggle('visible',handRaised);
+  broadcastHandState(); renderParticipants();
+};
+$('myTile').ondblclick = () => togglePin('self');
+
+document.addEventListener('keydown', e => {
+  const target=e.target, typing=target?.matches?.('input,textarea,select')||target?.isContentEditable;
+  if(e.key==='Escape'){ toggleSidePanel('',false); return; }
+  if(typing || !callScreen.classList.contains('active') || e.ctrlKey || e.altKey || e.metaKey) return;
+  const key=e.key.toLowerCase();
+  if(key==='m') $('micBtn').click();
+  else if(key==='v') $('camBtn').click();
+  else if(key==='s') $('shareBtn').click();
+  else if(key==='c'){ e.preventDefault(); $('chatBtn').click(); }
+  else if(key==='h') $('handBtn').click();
+});
+
 $('micBtn').onclick = () => {
   ensureAudioCtx();
   micOn = !micOn;
@@ -2872,6 +3034,8 @@ $('shareBtn').onclick = async () => {
       $('myTile').classList.add('sharing');
       sharing = true;
       $('shareBtn').classList.add('active');
+      $('myShareStatus').classList.add('visible');
+      broadcastShareState(); renderParticipants();
       $('myEmpty').style.display = 'none';
       broadcastCamState();
       screenTrack.onended = () => stopSharing();
@@ -2933,6 +3097,8 @@ async function stopSharing(){
   $('myTile').classList.remove('sharing');
   sharing = false;
   $('shareBtn').classList.remove('active');
+  $('myShareStatus').classList.remove('visible');
+  broadcastShareState(); renderParticipants();
   updateCamUI();
   broadcastCamState();
 
@@ -3452,7 +3618,7 @@ $('hangupBtn').onclick = async () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.2.10 · stable</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.0 · stable</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
