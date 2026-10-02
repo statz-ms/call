@@ -1354,6 +1354,7 @@ let connectionRouteTimer = null;
 let audioCtx = null;
 let audioOutputNode = null;
 let audioOutputEl = null;
+let audioUseElementSink = false;
 let selectedInputDeviceId = '';
 let selectedOutputDeviceId = '';
 let nativeAppAudioActive = false;
@@ -1399,22 +1400,47 @@ function showError(msg){
   errorMsg.style.display = 'block';
 }
 
-function ensureAudioCtx(){
-  if(!audioCtx){
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // Destino próprio: permite trocar a saída mesmo quando o navegador
-    // não implementa AudioContext.setSinkId().
-    audioOutputNode = audioCtx.createMediaStreamDestination();
-    audioOutputEl = document.createElement('audio');
-    audioOutputEl.autoplay = true;
-    audioOutputEl.playsInline = true;
-    audioOutputEl.srcObject = audioOutputNode.stream;
-    audioOutputEl.style.display = 'none';
-    document.body.appendChild(audioOutputEl);
-    audioOutputEl.play().catch(()=>{});
+function showAudioUnlock(){
+  let button=$('audioUnlockBtn');
+  if(!button){
+    button=document.createElement('button');button.id='audioUnlockBtn';button.type='button';
+    button.textContent='🔊 Ativar som';button.className='primary-btn';
+    button.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:auto;padding:12px 22px;z-index:99999';
+    button.onclick=()=>resumeReceivedAudio();document.body.appendChild(button);
   }
-  if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  button.hidden=false;button.style.display="block";
+}
+function audioDestination(ctx=audioCtx){
+  return audioUseElementSink && audioOutputNode ? audioOutputNode : ctx.destination;
+}
+function ensureElementAudioOutput(){
+  if(audioOutputEl)return;
+  const ctx=ensureAudioCtx();
+  audioOutputNode=ctx.createMediaStreamDestination();
+  audioOutputEl=document.createElement('audio');audioOutputEl.autoplay=true;audioOutputEl.playsInline=true;
+  audioOutputEl.srcObject=audioOutputNode.stream;audioOutputEl.style.display='none';document.body.appendChild(audioOutputEl);
+}
+function ensureAudioCtx(){
+  if(!audioCtx)audioCtx=new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state==='suspended' || audioCtx.state==='interrupted'){
+    audioCtx.resume().then(()=>{if(audioCtx.state!=='running')showAudioUnlock();}).catch(()=>showAudioUnlock());
+  }
   return audioCtx;
+}
+async function resumeReceivedAudio(){
+  try{
+    const ctx=ensureAudioCtx();await ctx.resume();
+    if(ctx.state!=='running')throw Error('O navegador bloqueou a saída de áudio.');
+    peers.forEach(entry=>{if(entry.stream && !entry.gainNode)applyAudioGraph(entry);});
+    if(audioUseElementSink && audioOutputEl)await audioOutputEl.play();
+    if($('audioUnlockBtn')){$('audioUnlockBtn').hidden=true;$('audioUnlockBtn').style.display='none';}
+  }catch(e){showAudioUnlock();}
+}
+function rerouteReceivedAudio(){
+  if(!audioCtx)return;
+  peers.forEach(entry=>{
+    if(entry.gainNode){try{entry.gainNode.disconnect();entry.gainNode.connect(audioDestination());}catch(e){applyAudioGraph(entry);}}
+  });
 }
 
 // ---------- Diagnóstico de câmera/microfone ----------
@@ -1943,9 +1969,10 @@ function applyAudioGraph(entry){
   }
   try{
     const ctx = ensureAudioCtx();
-    if(ctx.state === 'suspended'){
+    if(ctx.state !== 'running'){
       entry.video.muted = false;
-      ctx.resume().then(() => applyAudioGraph(entry)).catch(()=>{});
+      showAudioUnlock();
+      ctx.resume().then(() => {if(ctx.state==='running')applyAudioGraph(entry);}).catch(()=>showAudioUnlock());
       return;
     }
     entry.video.muted = true; // áudio passa a sair pelo Web Audio (delay + ganho)
@@ -1960,7 +1987,8 @@ function applyAudioGraph(entry){
     analyser.fftSize = 512;
     analyser.smoothingTimeConstant = 0.6;
 
-    source.connect(delay).connect(gain).connect(audioOutputNode || ctx.destination);
+    source.connect(delay).connect(gain).connect(audioDestination(ctx));
+    if(audioUseElementSink && audioOutputEl)audioOutputEl.play().catch(()=>showAudioUnlock());
     source.connect(analyser); // derivação só pra medir nível, não afeta o som
 
     entry.audioSource = source;
@@ -2134,7 +2162,7 @@ function playJoinSound(){
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(0.12, now + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-    osc.connect(gain).connect(audioOutputNode || ctx.destination);
+    osc.connect(gain).connect(audioDestination(ctx));
     osc.start(now);
     osc.stop(now + 0.17);
   }catch(e){}
@@ -2403,7 +2431,7 @@ function handleDataMessage(fromId, msg, sourceConn = null){
   }
   if(isHost && !roomAdmission.has(fromId)) return;
   if(msg.type==="room-ready"){
-    if(isHost){roomReadyGuests.add(fromId);callPeer(fromId,true);}
+    if(isHost){roomReadyGuests.add(fromId);callPeer(fromId);}
     return;
   }
   if(!isHost && !roomAccepted) return;
@@ -2651,6 +2679,7 @@ function wireDataConn(conn){
 }
 
 function resetConnectionRuntime(){
+  iceConfigPromise=null;roomTurnAvailable=false;
   clearTimeout(roomJoinTimer);roomJoinTimer=null;
   roomAccepted=false;
   roomReadyGuests.clear();
@@ -2848,7 +2877,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
 
   peer.on('connection', conn => wireDataConn(conn));
   peer.on('call', call => {
-    if(!roomAdmission.has(call.peer) || !roomReadyGuests.has(call.peer)){try{call.close();}catch(e){}return;}
+    if(!roomAdmission.has(call.peer)){try{call.close();}catch(e){}return;}
     const streamToSend = new MediaStream(getCurrentTracks());
     call.answer(streamToSend);
     wireCall(call);
@@ -3648,24 +3677,20 @@ async function changeInputDevice(deviceId){
 }
 
 async function setOutputDevice(deviceId){
-  if(!deviceId) return false;
-  ensureAudioCtx();
-  let applied = false;
-  if(audioCtx && typeof audioCtx.setSinkId === 'function'){
-    try{
-      await audioCtx.setSinkId(deviceId);
-      applied = true;
-    }catch(e){}
+  if(!deviceId)return false;
+  const ctx=ensureAudioCtx();let applied=false;
+  if(typeof ctx.setSinkId==='function'){
+    try{await ctx.setSinkId(deviceId);audioUseElementSink=false;applied=true;}catch(e){}
   }
-  if(!applied && audioOutputEl && typeof audioOutputEl.setSinkId === 'function'){
-    try{
-      await audioOutputEl.setSinkId(deviceId);
-      applied = true;
-    }catch(e){}
+  if(!applied){
+    ensureElementAudioOutput();
+    if(typeof audioOutputEl.setSinkId==='function'){
+      try{await audioOutputEl.setSinkId(deviceId);audioUseElementSink=true;applied=true;}catch(e){}
+    }
   }
   if(applied){
-    selectedOutputDeviceId = deviceId;
-    $('outputDevice').value = deviceId;
+    selectedOutputDeviceId=deviceId;$('outputDevice').value=deviceId;
+    rerouteReceivedAudio();await resumeReceivedAudio();
   }
   return applied;
 }
@@ -3713,14 +3738,14 @@ $('hangupBtn').onclick = async () => {
 
 ['click','touchstart','keydown'].forEach(ev => {
   document.addEventListener(ev, () => {
-    ensureAudioCtx();
+    resumeReceivedAudio();
     peers.forEach(entry => {
       if(entry.video) entry.video.play().catch(()=>{});
     });
-  }, { once: true, passive: true });
+  }, { passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.3 · teste P2P/grupo</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.4 · áudio</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.

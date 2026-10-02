@@ -1,4 +1,4 @@
-# Statz 1.3.3 — reconstrução
+# Statz 1.3.4 — reconstrução
 
 Frontend preservado da versão 1.3.1 do GitHub, com seleção de sala P2P/grupo, API de autenticação reconstruída e projeto desktop Tauri v2. Os originais do backend e do Rust não estavam no ZIP. Esta entrega não é uma cópia integral do projeto perdido.
 
@@ -47,3 +47,9 @@ O frontend consulta `/api/ice-config` após o login. `STATZ_ICE_SERVERS` pode co
 No diretório privado `data/`, crie `turn.json` com uma lista ICE válida (array ou objeto `{ "iceServers": [...] }`). A API lê esse arquivo a cada consulta; não publique esse arquivo. Alternativamente, crie `data/metered.json` com `{ "app_name": "nome-do-app", "api_key": "chave-TURN" }`. A API consulta o provedor, mantém a chave no servidor e armazena o resultado em memória por até cinco minutos. `STATZ_ICE_SERVERS` continua disponível como alternativa.
 
 Uma tentativa de entrar sem resposta termina após 25 segundos com um aviso no lobby. Erros de sinalização são exibidos no painel da chamada, que está visível. O canal inicial do convidado carrega a configuração completa para permitir descobrir salas de Grupo por código, mesmo após um convite antigo de sala dupla. A mídia usa o modo confirmado pelo anfitrião.
+
+## Correção de mídia 1.3.4
+
+O áudio recebido usa a saída do AudioContext diretamente, e a troca de dispositivo conecta o grafo ao destino apropriado. O botão Ativar som aparece quando o navegador exige uma ação do usuário. A negociação inicial respeita um iniciador por par, aceita mídia de convidados já admitidos e recarrega a configuração ICE ao criar/entrar novamente.
+
+Verificação com dois navegadores isolados, conexão forçada por TURN e mídia simulada: pacotes de áudio recebidos, energia de áudio detectada nos dois sentidos e tela de teste transmitida e renderizada com validação dos pixels. Ainda depende dos microfones e permissões nos dispositivos reais.

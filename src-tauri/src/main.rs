@@ -2,7 +2,7 @@
 
 #[tauri::command]
 fn desktop_info() -> String {
-    "Statz Desktop 1.3.3 capture=false".to_string()
+    "Statz Desktop 1.3.4 capture=false".to_string()
 }
 
 fn main() {
