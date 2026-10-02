@@ -1128,6 +1128,7 @@ const FALLBACK_ICE_SERVERS = [
   { urls: 'stun:global.stun.twilio.com:3478' }
 ];
 let iceConfigPromise = null;
+let roomTurnAvailable = false;
 
 async function getIceConfig(){
   if(!iceConfigPromise){
@@ -1138,6 +1139,7 @@ async function getIceConfig(){
         if(!Array.isArray(dynamicServers) || !dynamicServers.some(s => String(s?.urls || '').startsWith('turn'))){
           throw new Error('Resposta TURN inválida');
         }
+        roomTurnAvailable=true;
         return { iceServers: [...FALLBACK_ICE_SERVERS, ...dynamicServers] };
       }catch(error){
         if(error?.status===401 || error?.status===403){
@@ -1325,6 +1327,7 @@ let roomCode = null;
 let roomGroupIceConfig = {iceServers:FALLBACK_ICE_SERVERS};
 let roomMode = StatzRoomPolicy.normalizeMode(new URLSearchParams(location.search).get('mode'));
 let roomAccepted = false;
+let roomJoinTimer = null;
 const roomReadyGuests = new Set();
 let roomAdmission = StatzRoomPolicy.createAdmission(roomMode);
 function roomIceConfig(){return StatzRoomPolicy.iceConfig(roomMode, roomGroupIceConfig);}
@@ -2314,7 +2317,7 @@ function scheduleConnectWatchdog(id){
     if(attempts <= 4){
       callPeer(id, true);
     } else {
-      const msg = 'Não consegui conectar com alguém na sala — provavelmente firewall/rede. Tenta recarregar.';
+      const msg = roomMode==='duo' ? 'A conexão direta não funcionou entre essas redes. Criem uma sala Grupo com TURN funcionando.' : 'A conexão de mídia falhou. Verifique o TURN da sala ou tente outra rede.';
       if(entry && entry.empty){
         const span = entry.empty.querySelector('span:last-child');
         if(span) span.textContent = msg;
@@ -2391,6 +2394,7 @@ function handleDataMessage(fromId, msg, sourceConn = null){
   }
   if(msg.type==='room-accepted'){
     if(!isHost && fromId===expectedHost){
+      clearTimeout(roomJoinTimer);roomJoinTimer=null;
       updateRoomMode(msg.mode);roomAccepted=true;
       if(sourceConn?.open) sourceConn.send({type:"room-ready"});
       saveRoomState(roomCode,false);callPeer(expectedHost);
@@ -2647,6 +2651,7 @@ function wireDataConn(conn){
 }
 
 function resetConnectionRuntime(){
+  clearTimeout(roomJoinTimer);roomJoinTimer=null;
   roomAccepted=false;
   roomReadyGuests.clear();
   roomAdmission.clear();
@@ -2666,6 +2671,7 @@ function resetConnectionRuntime(){
 }
 
 function exitRoomToMenu({ forgetRoom = false } = {}){
+  clearTimeout(roomJoinTimer);roomJoinTimer=null;
   if(roomExitInProgress) return;
   roomExitInProgress = true;
 
@@ -2837,6 +2843,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
     $('resumeRoom').style.display = 'none';
     enterCallUI();
     setMicButton();
+    if(roomMode==='group' && !roomTurnAvailable)showErrorInCall('Retransmissão indisponível: esta sala está tentando conexão direta. O administrador precisa configurar o TURN para conectar redes incompatíveis.',0);
   });
 
   peer.on('connection', conn => wireDataConn(conn));
@@ -2870,6 +2877,7 @@ async function createRoom(requestedCode = null, reconnecting = false){
 }
 
 async function joinRoom(code, reconnecting = false){
+  clearTimeout(roomJoinTimer);roomJoinTimer=null;
   errorMsg.style.display = 'none';
   if(!validateRequiredProfile()) return;
   const cleanCode = String(code || '').trim().replace(/\D/g,'').slice(0,3);
@@ -2898,8 +2906,8 @@ async function joinRoom(code, reconnecting = false){
 
   // IMPORTANTÍSSIMO: cada tentativa captura o Peer que ela própria criou.
   // Callbacks antigos nunca podem destruir/reiniciar um Peer mais novo.
-  roomGroupIceConfig=roomMode==='duo'?{iceServers:FALLBACK_ICE_SERVERS}:await getIceConfig();
-  const thisPeer = new Peer(undefined, { config: roomIceConfig() });
+  roomGroupIceConfig=await getIceConfig();
+  const thisPeer = new Peer(undefined, { config: roomGroupIceConfig });
   peer = thisPeer;
   let hostDataOpened = false;
   let retryScheduled = false;
@@ -2925,8 +2933,19 @@ async function joinRoom(code, reconnecting = false){
     $('resumeBtn').textContent = 'Reentrar';
     enterCallUI();
     setMicButton();
+    if(roomMode==='group' && !roomTurnAvailable)showErrorInCall('Retransmissão indisponível: esta sala está tentando conexão direta. O administrador precisa configurar o TURN para conectar redes incompatíveis.',0);
 
     const conn = thisPeer.connect(hostId, { reliable: true });
+    roomJoinTimer=setTimeout(()=>{
+      if(peer!==thisPeer || roomAccepted)return;
+      const message=roomMode==='duo'
+        ? 'Não foi possível conectar diretamente à sala. Confirme que o anfitrião está com a sala aberta. Se o código estiver certo, a rede pode exigir TURN; criem uma sala Grupo com TURN configurado.'
+        : 'Não foi possível conectar à sala. Confirme o código e se o anfitrião está online. Se estiverem em redes diferentes, verifiquem se o TURN está configurado e funcionando.';
+      try{thisPeer.destroy();}catch(e){}peer=null;
+      resetConnectionRuntime();
+      sessionStorage.setItem('statz_room_error',message);
+      exitRoomToMenu();
+    },25000);
     wireDataConn(conn);
     conn.on('open', () => {
       if(peer !== thisPeer) return;
@@ -2963,7 +2982,8 @@ async function joinRoom(code, reconnecting = false){
       if(!hostDataOpened && reconnecting && reconnectAttempts < 8){
         retryHostConnection();
       }else if(!hostDataOpened){
-        showError('Sala não encontrada. Confere o código e se ela está aberta.');
+        showErrorInCall('Sala não encontrada. Confira o código e mantenha a sala do anfitrião aberta.',0);
+        clearTimeout(roomJoinTimer);roomJoinTimer=null;
         $('joinBtn').disabled = false;
         $('joinBtn').textContent = 'Entrar';
       }
@@ -2972,7 +2992,8 @@ async function joinRoom(code, reconnecting = false){
       return;
     }
 
-    showError('Erro de conexão: ' + (err.type || err));
+    showErrorInCall('Erro de conexão: ' + (err.type || err),0);
+    clearTimeout(roomJoinTimer);roomJoinTimer=null;
     $('joinBtn').disabled = false;
     $('joinBtn').textContent = 'Entrar';
     $('resumeBtn').disabled = false;
@@ -3189,7 +3210,7 @@ async function stopSharing(){
 
 function showErrorInCall(msg, duration = 3000){
   $('connStatus').textContent = msg;
-  setTimeout(()=> $('connStatus').textContent = peers.size ? 'conectado' : 'esperando a galera entrar…', duration);
+  if(duration>0)setTimeout(()=> $('connStatus').textContent = peers.size ? 'conectado' : 'esperando a galera entrar…', duration);
 }
 
 $('fullscreenBtn').onclick = () => {
@@ -3699,7 +3720,7 @@ $('hangupBtn').onclick = async () => {
   }, { once: true, passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.2 · teste P2P/grupo</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.3 · teste P2P/grupo</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.

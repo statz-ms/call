@@ -1,4 +1,4 @@
-# Statz 1.3.2 — reconstrução
+# Statz 1.3.3 — reconstrução
 
 Frontend preservado da versão 1.3.1 do GitHub, com seleção de sala P2P/grupo, API de autenticação reconstruída e projeto desktop Tauri v2. Os originais do backend e do Rust não estavam no ZIP. Esta entrega não é uma cópia integral do projeto perdido.
 
@@ -40,4 +40,10 @@ As salas e chamadas mantêm o código PeerJS/WebRTC original, com sinalização 
 
 Site: https://statz-ms.github.io/call/. A API está em um túnel HTTPS temporário, hospedado no computador do proprietário. Se o processo ou computador parar, o login fica indisponível. Ao reiniciar um Quick Tunnel, o endereço muda e `config.js` do site precisa ser atualizado. As contas novas não recuperam o banco antigo. As senhas e a chave privada não estão neste repositório.
 
-O frontend consulta `/api/ice-config` após o login. `STATZ_ICE_SERVERS` pode conter um JSON com servidores TURN próprios; sem essa variável, a API entrega os servidores públicos OpenRelay usados no backup. Credenciais antigas da Metered não foram recuperadas. A sala dupla filtra os servidores TURN da configuração da mídia.
+O frontend consulta `/api/ice-config` após o login. `STATZ_ICE_SERVERS` pode conter um JSON com servidores TURN próprios; sem configuração válida, a API retorna uma lista vazia e o frontend avisa que só pode tentar conexão direta. Os servidores públicos antigos falharam no teste de retransmissão e foram removidos. Credenciais antigas da Metered não foram recuperadas. A sala dupla filtra os servidores TURN da configuração da mídia.
+
+## Configurar TURN válido
+
+No diretório privado `data/`, crie `turn.json` com uma lista ICE válida (array ou objeto `{ "iceServers": [...] }`). A API lê esse arquivo a cada consulta; não publique esse arquivo. Alternativamente, crie `data/metered.json` com `{ "app_name": "nome-do-app", "api_key": "chave-TURN" }`. A API consulta o provedor, mantém a chave no servidor e armazena o resultado em memória por até cinco minutos. `STATZ_ICE_SERVERS` continua disponível como alternativa.
+
+Uma tentativa de entrar sem resposta termina após 25 segundos com um aviso no lobby. Erros de sinalização são exibidos no painel da chamada, que está visível. O canal inicial do convidado carrega a configuração completa para permitir descobrir salas de Grupo por código, mesmo após um convite antigo de sala dupla. A mídia usa o modo confirmado pelo anfitrião.

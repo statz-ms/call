@@ -31,7 +31,12 @@ test('cadastro, aprovação, revogação e persistência', async () => {
     assert.equal(member.status,200);
     assert.equal((await request('/api/admin/users','GET',undefined,member.data.token)).status,403);
     assert.equal((await request('/api/auth/me','GET',undefined,member.data.token)).status,200);
-    assert.equal((await request('/api/ice-config','GET',undefined,member.data.token)).data.iceServers.length,3);
+    assert.equal((await request('/api/ice-config','GET',undefined,member.data.token)).data.configured,false);
+    fs.writeFileSync(path.join(dataDir,'turn.json'),JSON.stringify([{urls:'turn:test.invalid:443',username:'test-user',credential:'test-secret'}]));
+    const configured=await request('/api/ice-config','GET',undefined,member.data.token);
+    assert.equal(configured.data.configured,true);
+    assert.equal(configured.data.iceServers.length,1);
+    assert.equal((await request('/api/ice-config')).status,401);
     assert.equal((await request('/api/admin/audit-log','GET',undefined,member.data.token)).status,403);
     const renewal=await request('/api/admin/users/'+person.id,'PATCH',{extend_days:7},admin);
     assert.ok(renewal.data.user.access_expires_at);

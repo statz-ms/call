@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createTurnConfig } from './turn-config.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -41,6 +42,7 @@ export function createApp({ dataDir = path.join(root, 'data'), adminPassword = p
       return db.users.find(u => u.id === payload.sub && u.active && u.approved && !expired(u) && (u.session_version || 0) === (payload.ver || 0)) || null;
     } catch { return null; }
   };
+  const loadTurnServers=createTurnConfig(dataDir);
   const attempts = new Map();
   const server = http.createServer(async (req, res) => {
     const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
@@ -52,7 +54,7 @@ export function createApp({ dataDir = path.join(root, 'data'), adminPassword = p
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
     try {
       const url = new URL(req.url, 'http://localhost'); const route = url.pathname;
-      if (route === '/api/health') return json(200, { ok: true, version: '1.3.2' });
+      if (route === '/api/health') return json(200, { ok: true, version: '1.3.3' });
       if (route === '/api/auth/public-key') return json(200, { public_key: publicKey });
       if (!route.startsWith('/api/')) {
         if (req.method !== 'GET') return json(405, { error: 'Método não permitido.' });
@@ -87,11 +89,10 @@ export function createApp({ dataDir = path.join(root, 'data'), adminPassword = p
       const user = authenticate(req); if (!user) return json(401, { error: 'Sessão inválida. Faça login.' });
       if (route === '/api/auth/me' && req.method === 'GET') return json(200, { user: safeUser(user) });
       if(route==='/api/ice-config' && req.method==='GET'){
-        const iceServers=process.env.STATZ_ICE_SERVERS?JSON.parse(process.env.STATZ_ICE_SERVERS):[
-          {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-          {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-          {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
-        ];return json(200,{iceServers});
+        try{
+          const iceServers=await loadTurnServers();
+          return json(200,{iceServers,configured:iceServers.some(s=>[].concat(s.urls).some(u=>/^turns?:/.test(u)))});
+        }catch(e){return json(503,{error:'Não foi possível carregar o TURN. O administrador precisa verificar a configuração.'});}
       }
       if (!route.startsWith('/api/admin/')) return json(404, { error: 'Não encontrado.' });
       if (user.role !== 'admin') return json(403, { error: 'Acesso exclusivo do administrador.' });

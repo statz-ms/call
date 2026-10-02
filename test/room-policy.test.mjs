@@ -48,10 +48,20 @@ test('aceitação do anfitrião escolhe o modo antes da primeira chamada',()=>{
   const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
   const start=html.indexOf('function handleDataMessage(');const end=html.indexOf('\nfunction shouldInitiateDataConn',start);
   const actions=[];
-  const sandbox=vm.createContext({isHost:false,roomCode:'123',ROOM_PREFIX:'statz-',roomAccepted:false,updateRoomMode:m=>actions.push('mode:'+m),saveRoomState:()=>actions.push('saved'),callPeer:id=>actions.push('call:'+id)});
+  const sandbox=vm.createContext({isHost:false,roomCode:'123',ROOM_PREFIX:'statz-',roomAccepted:false,roomJoinTimer:null,clearTimeout:()=>{},updateRoomMode:m=>actions.push('mode:'+m),saveRoomState:()=>actions.push('saved'),callPeer:id=>actions.push('call:'+id)});
   vm.runInContext(html.slice(start,end),sandbox);
   sandbox.handleDataMessage('estranho',{type:'room-accepted',mode:'duo'});
   assert.equal(sandbox.roomAccepted,false);assert.equal(actions.length,0);
   sandbox.handleDataMessage('statz-123',{type:'room-accepted',mode:'duo'});
   assert.equal(sandbox.roomAccepted,true);assert.deepEqual(actions,['mode:duo','saved','call:statz-123']);
+});
+test('a entrada travada termina com aviso após 25 segundos',()=>{
+  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+  const start=html.indexOf('    roomJoinTimer=setTimeout(');const end=html.indexOf('    },25000);',start)+'    },25000);'.length;
+  let timeout,delay,saved,error,exited=false,destroyed=false;
+  const thisPeer={destroy:()=>destroyed=true};
+  const sandbox=vm.createContext({peer:thisPeer,thisPeer,roomAccepted:false,roomMode:'duo',setTimeout:(fn,ms)=>{timeout=fn;delay=ms;return 1;},resetConnectionRuntime:()=>{},sessionStorage:{setItem:(k,v)=>{saved=k;error=v;}},exitRoomToMenu:()=>exited=true});
+  vm.runInContext(html.slice(start,end),sandbox);assert.equal(delay,25000);timeout();
+  assert.equal(destroyed,true);assert.equal(exited,true);assert.equal(saved,'statz_room_error');assert.ok(error.includes('conectar diretamente'));
+  destroyed=false;exited=false;sandbox.roomAccepted=true;timeout();assert.equal(destroyed,false);assert.equal(exited,false);
 });
