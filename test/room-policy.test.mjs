@@ -1,0 +1,57 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const context = vm.createContext({});
+vm.runInContext(fs.readFileSync(new URL('../web/room-policy.js',import.meta.url),'utf8'),context);
+const policy = context.StatzRoomPolicy;
+test('duas pessoas: um convidado, reconexão e liberação da vaga',()=>{
+  const room=policy.createAdmission('duo');
+  assert.equal(room.reserve('primeiro'),true);
+  assert.equal(room.reserve('primeiro'),true);
+  assert.equal(room.reserve('segundo'),false);
+  room.release('primeiro');
+  assert.equal(room.reserve('segundo'),true);
+  assert.equal(room.reserve('terceiro'),false);
+  room.clear();assert.equal(room.reserve('terceiro'),true);
+});
+test('grupo admite mais participantes e mantém TURN; dupla só usa STUN',()=>{
+  const group={iceServers:[{urls:'stun:example.test'},{urls:'turn:example.test',username:'a',credential:'b'},{urls:['stun:other.test','turns:other.test']}]};
+  const duo=policy.iceConfig('duo',group);
+  assert.equal(duo.iceServers.length,1);
+  assert.equal(duo.iceServers[0].urls,'stun:example.test');
+  assert.equal(policy.iceConfig('group',group),group);
+  const room=policy.createAdmission('group');
+  for(let i=0;i<8;i++) assert.equal(room.reserve('p'+i),true);
+  assert.equal(policy.normalizeMode('unknown'),'group');
+});
+test('o anfitrião recusa terceiro participante antes de responder a mídia',()=>{
+  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+  const start=html.indexOf('function wireDataConn(conn){');
+  const end=html.indexOf('\nfunction resetConnectionRuntime()',start);
+  const callbacks=new Map();const rejected={peer:'terceiro',on:(event,handler)=>callbacks.set(event,handler),send:msg=>{rejected.message=msg},close:()=>{rejected.closed=true}};
+  const room=policy.createAdmission('duo');room.reserve('segundo');
+  const sandbox=vm.createContext({isHost:true,roomAdmission:room,setTimeout:fn=>fn()});
+  vm.runInContext(html.slice(start,end),sandbox);
+  sandbox.wireDataConn(rejected);callbacks.get('open')();
+  assert.equal(rejected.message.type,'room-full');assert.equal(rejected.closed,true);
+  const callStart=html.indexOf("  peer.on('call', call => {",html.indexOf('async function createRoom('));
+  const callEnd=html.indexOf("  peer.on('error'",callStart);
+  let incoming;const mockPeer={on:(_,fn)=>incoming=fn};
+  const mediaContext=vm.createContext({peer:mockPeer,roomAdmission:room});
+  vm.runInContext(html.slice(callStart,callEnd),mediaContext);
+  let answered=false,closed=false;
+  incoming({peer:'terceiro',answer:()=>answered=true,close:()=>closed=true});
+  assert.equal(answered,false);assert.equal(closed,true);
+});
+test('aceitação do anfitrião escolhe o modo antes da primeira chamada',()=>{
+  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+  const start=html.indexOf('function handleDataMessage(');const end=html.indexOf('\nfunction shouldInitiateDataConn',start);
+  const actions=[];
+  const sandbox=vm.createContext({isHost:false,roomCode:'123',ROOM_PREFIX:'statz-',roomAccepted:false,updateRoomMode:m=>actions.push('mode:'+m),saveRoomState:()=>actions.push('saved'),callPeer:id=>actions.push('call:'+id)});
+  vm.runInContext(html.slice(start,end),sandbox);
+  sandbox.handleDataMessage('estranho',{type:'room-accepted',mode:'duo'});
+  assert.equal(sandbox.roomAccepted,false);assert.equal(actions.length,0);
+  sandbox.handleDataMessage('statz-123',{type:'room-accepted',mode:'duo'});
+  assert.equal(sandbox.roomAccepted,true);assert.deepEqual(actions,['mode:duo','saved','call:statz-123']);
+});

@@ -1,0 +1,54 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createApp } from '../server.mjs';
+test('cadastro, aprovação, revogação e persistência', async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'statz-test-'));
+  const app = createApp({ dataDir, adminPassword: 'test-password-123' });
+  await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${app.server.address().port}`;
+  const request = async (route, method='GET', body, token) => {
+    const response = await fetch(base+route, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer '+token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    return { status: response.status, data: await response.json() };
+  };
+  try {
+    assert.equal((await request('/api/admin/users')).status,401);
+    const login = await request('/api/auth/login','POST',{username:'admin',password:'test-password-123'});
+    assert.equal(login.status,200); assert.equal(login.data.user.password,undefined);
+    const admin = login.data.token;
+    const key = await request('/api/admin/invite-keys','POST',{label:'Teste',max_uses:1},admin);
+    assert.equal(key.status,201);
+    const register = { username:'pessoa',display_name:'Pessoa',password:'long-password-123',invite_key:key.data.key.key };
+    assert.equal((await request('/api/auth/register','POST',register)).status,201);
+    assert.equal((await request('/api/auth/register','POST',{...register,username:'outra'})).status,403);
+    assert.equal((await request('/api/auth/login','POST',{username:'pessoa',password:register.password})).status,403);
+    const users = await request('/api/admin/users','GET',undefined,admin);
+    const person = users.data.users.find(x=>x.username==='pessoa');
+    assert.equal((await request('/api/admin/users/'+person.id,'PATCH',{approved:true},admin)).status,200);
+    const member = await request('/api/auth/login','POST',{username:'pessoa',password:register.password});
+    assert.equal(member.status,200);
+    assert.equal((await request('/api/admin/users','GET',undefined,member.data.token)).status,403);
+    assert.equal((await request('/api/auth/me','GET',undefined,member.data.token)).status,200);
+    assert.equal((await request('/api/ice-config','GET',undefined,member.data.token)).data.iceServers.length,3);
+    assert.equal((await request('/api/admin/audit-log','GET',undefined,member.data.token)).status,403);
+    const renewal=await request('/api/admin/users/'+person.id,'PATCH',{extend_days:7},admin);
+    assert.ok(renewal.data.user.access_expires_at);
+    await request('/api/admin/users/'+person.id,'PATCH',{revoke_sessions:true},admin);
+    assert.equal((await request('/api/auth/me','GET',undefined,member.data.token)).status,401);
+    const newSession=await request('/api/auth/login','POST',{username:'pessoa',password:register.password});
+    assert.equal(newSession.status,200);
+    await request('/api/admin/users/'+person.id,'PATCH',{lifetime:true},admin);
+    const audits=await request('/api/admin/audit-log','GET',undefined,admin);
+    assert.ok(audits.data.events.some(e=>e.action==='revoke_sessions'));
+    await request('/api/admin/users/'+person.id,'PATCH',{active:false},admin);
+    assert.equal((await request('/api/auth/me','GET',undefined,member.data.token)).status,401);
+    assert.equal((await request('/api/admin/users/'+login.data.user.id,'DELETE',undefined,admin)).status,403);
+    assert.equal((await request('/api/auth/me','GET',undefined,admin+'x')).status,401);
+    assert.equal((await fetch(base+'/data/db.json')).status,404);
+    assert.equal((await fetch(base+'/room-policy.js')).status,200);
+    const html=await (await fetch(base+'/')).text();assert.ok(html.includes('config.js'));assert.ok(!html.includes('characterization-len-benjamin'));
+    const other = createApp({ dataDir }); assert.equal(other.initialPassword,undefined);other.server.close();
+  } finally { await new Promise(resolve=>app.server.close(resolve)); fs.rmSync(dataDir,{recursive:true,force:true}); }
+});

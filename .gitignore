@@ -1,0 +1,6 @@
+data/
+node_modules/
+src-tauri/target/
+.env
+originais/
+ACESSOS_STATZ_TESTE.txt
