@@ -935,6 +935,7 @@ body.in-call .admin-launch{display:none!important}
         </select>
       </div>
       <div class="native-audio-status" id="nativeAppAudioStatus">Selecione um jogo/app. A Statz vai capturar somente o áudio desse processo.</div>
+      <button class="audio-refresh" id="refreshNativeAudioApps" type="button">Atualizar aplicativos</button>
     </div>
     <button class="audio-refresh" id="refreshAudioDevices" type="button">Atualizar dispositivos</button>
     <div class="audio-hint">Se a Alexa estiver conectada ao PC/celular como saída de áudio, ela aparecerá aqui. O navegador só consegue usar dispositivos que o sistema disponibiliza para ele.</div>
@@ -3365,6 +3366,8 @@ async function ensureNativeAudioProcessor(){
         this.port.onmessage = (e) => {
           if(e.data instanceof ArrayBuffer){
             this.queue.push(new Float32Array(e.data));
+            // Avoid seconds of delayed audio after a suspended WebView.
+            if(this.queue.length > 12){this.queue.splice(0,this.queue.length-12);this.offsetFrames=0;}
           }
         };
       }
@@ -3380,7 +3383,7 @@ async function ensureNativeAudioProcessor(){
             if(this.offsetFrames < frameCount){
               const p = this.offsetFrames * 2;
               left = cur[p] || 0;
-              right = cur[p+1] || left;
+              right = cur[p+1] ?? left;
               this.offsetFrames++;
               break;
             }
@@ -3522,6 +3525,10 @@ async function startNativeAppAudio(pid){
   const Channel = window.__TAURI__.core.Channel;
   nativeAppAudioChannel = new Channel();
   nativeAppAudioChannel.onmessage = (payload) => {
+    if(payload?.error){
+      stopNativeAppAudio({silent:true}).then(() => setNativeAudioStatus(payload.error,'error'));
+      return;
+    }
     try{
       let buffer=payload;
       nativeLastPayloadType=Object.prototype.toString.call(payload).replace('[object ','').replace(']','');
@@ -3547,6 +3554,7 @@ async function startNativeAppAudio(pid){
   try{
     const format = await window.__TAURI__.core.invoke('start_app_audio', {
       pid: Number(pid),
+      sampleRate: ctx.sampleRate,
       onAudio: nativeAppAudioChannel
     });
     nativeAppAudioPid = Number(pid);
@@ -3579,8 +3587,11 @@ async function startNativeAppAudio(pid){
 }
 
 $('nativeAppAudioProcess')?.addEventListener('change', async e => {
-  await startNativeAppAudio(e.target.value);
+  const select=e.target;
+  select.disabled=true;
+  try{await startNativeAppAudio(select.value);}finally{select.disabled=false;}
 });
+$('refreshNativeAudioApps')?.addEventListener('click', refreshNativeAudioApps);
 
 
 // ---------- Dispositivos de áudio ----------
@@ -3745,7 +3756,7 @@ $('hangupBtn').onclick = async () => {
   }, { passive: true });
 });
 </script>
-<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.4 · áudio</div>
+<div id="appVersion" style="position:fixed;bottom:6px;right:8px;font:11px/1.4 'JetBrains Mono',monospace;color:#999;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:6px;z-index:99999;pointer-events:none;">v1.3.5 · áudio</div>
 
 <script>
 /* SquadCall Desktop bridge bootstrap.
@@ -3759,7 +3770,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       const versionMatch = String(info || '').match(/Desktop\s+([^\s]+)/i);
       const badge = document.getElementById('appVersion');
       if(badge && versionMatch) badge.textContent = 'v' + versionMatch[1] + ' · stable';
-      if(info && String(info).includes('capture=false')){document.getElementById('nativeAppAudioBox')?.remove();}else{setTimeout(() => refreshNativeAudioApps?.(), 500);}
+      if(info && String(info).includes('capture=false')){
+        document.getElementById('nativeAppAudioProcess').disabled=true;
+        setNativeAudioStatus('Áudio por aplicativo disponível apenas no Windows.');
+      }else{setTimeout(() => refreshNativeAudioApps?.(), 500);}
     }
   } catch (e) {
     console.warn('[SquadCall Desktop] bridge indisponível:', e);

@@ -26,9 +26,9 @@ As salas e chamadas mantêm o código PeerJS/WebRTC original, com sinalização 
 
 ## Limitações desta entrega
 
-- Captura nativa isolada de áudio por processo (WASAPI) não foi recuperada nem reimplementada. Esse controle fica oculto no desktop; compartilhamento via navegador mantém o código original.
+- Captura por aplicativo reconstruída com WASAPI no desktop Windows: em Áudio, selecione o jogo/programa. Inclui seus subprocessos, sem capturar o som geral do computador. Exige Windows 10 build 20348 ou Windows 11. No site, a seleção por processo não está disponível.
 - Atualização automática do instalador não está habilitada: requer nova implementação e chave de assinatura controlada por você. Os manifests antigos não devem assinar esta reconstrução.
-- O instalador não foi compilado nesta máquina: Rust/Cargo não estão instalados. A fonte Tauri e o ícone estão incluídos.
+- A compilação do instalador é executada pelo workflow Statz Desktop Windows no GitHub. O resultado fica nos artefatos do workflow e nas Releases.
 - Não houve teste de chamada real, microfone, câmera ou compartilhamento entre dispositivos. A inspeção visual automatizada também não foi concluída porque o ambiente impediu a execução do navegador.
 - A API usa arquivo JSON e atende uma única instância. Não execute várias instâncias sobre o mesmo `data/`.
 
