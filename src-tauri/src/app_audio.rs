@@ -145,7 +145,7 @@ fn capture(pid: u32, rate: u32, output: Channel<InvokeResponseBody>, stop: &Atom
     // Include ONLY the selected executable's process tree. Never fall back to
     // whole-system loopback, which would transmit Discord and cause echo.
     let mut client = AudioClient::new_application_loopback_client(pid, true).map_err(error)?;
-    let format = WaveFormat::new(32, 32, &SampleType::Float, rate, 2, None);
+    let format = WaveFormat::new(32, 32, &SampleType::Float, rate as usize, 2, None);
     client.initialize_client(&format, &Direction::Capture,
         &StreamMode::EventsShared { autoconvert: true, buffer_duration_hns: 200_000 }).map_err(error)?;
     let event = client.set_get_eventhandle().map_err(error)?;
@@ -177,3 +177,4 @@ fn list_apps() -> Result<Vec<AudioApp>, String> { Err("Áudio por aplicativo dis
 fn capture(_: u32, _: u32, _: Channel<InvokeResponseBody>, _: &AtomicBool,
     _: &std::sync::mpsc::SyncSender<Result<AudioFormat, String>>
 ) -> Result<(), String> { Err("Áudio por aplicativo disponível apenas no Windows.".into()) }
+

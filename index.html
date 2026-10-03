@@ -477,6 +477,7 @@
 
 
   .desktop-only{display:none}
+  html[data-squadcall-desktop="1"] .web-only{display:none}
   html[data-squadcall-desktop="1"] .desktop-only{display:block}
   .native-audio-status{
     margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4
@@ -937,6 +938,7 @@ body.in-call .admin-launch{display:none!important}
       <div class="native-audio-status" id="nativeAppAudioStatus">Selecione um jogo/app. A Statz vai capturar somente o áudio desse processo.</div>
       <button class="audio-refresh" id="refreshNativeAudioApps" type="button">Atualizar aplicativos</button>
     </div>
+    <div class="audio-hint web-only">Para transmitir só o som de um jogo ou programa, use <a href="https://github.com/statz-ms/call/releases/tag/desktop-v1.3.5" target="_blank" rel="noopener">Áudio do aplicativo no Statz Desktop</a>.</div>
     <button class="audio-refresh" id="refreshAudioDevices" type="button">Atualizar dispositivos</button>
     <div class="audio-hint">Se a Alexa estiver conectada ao PC/celular como saída de áudio, ela aparecerá aqui. O navegador só consegue usar dispositivos que o sistema disponibiliza para ele.</div>
   </div>

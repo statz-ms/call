@@ -21,6 +21,8 @@ jobs:
         run: rustup update stable --no-self-update
       - name: Dependências
         run: npm install
+      - name: Validar áudio e API
+        run: npm test
       - name: Verificar captura nativa
         run: cargo check --manifest-path src-tauri/Cargo.toml
       - name: Compilar instalador
