@@ -1,1 +1,1 @@
-window.SQUADCALL_AUTH_API='https://neil-reproduced-simulation-officials.trycloudflare.com';
+window.SQUADCALL_AUTH_API='https://sensitivity-dish-organised-dawn.trycloudflare.com';
